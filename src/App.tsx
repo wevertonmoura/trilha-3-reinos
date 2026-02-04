@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, MapPin, Trophy, Users, CheckCircle2, User, Mail, ChevronRight, Instagram, Clock, Activity, Flag, ChevronDown, ArrowRight, Share2, Loader2, AlertCircle, X, Ticket, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 
+import AdminPanel from './AdminPanel';
+
 // === 1. IMPORTAÇÕES DO FIREBASE ===
 import { initializeApp } from "firebase/app";
 import { 
@@ -49,6 +51,12 @@ const itemStagger: Variants = {
 };
 
 const JuntosSomosMaisFinal = () => {
+  const isAdmPage = window.location.pathname === '/adm';
+
+  if (isAdmPage) {
+    return <AdminPanel />;
+  }
+
   // === ESTADOS ===
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -130,7 +138,7 @@ const JuntosSomosMaisFinal = () => {
       let numeroInscricaoFinal = confirmedData?.numero_inscricao;
 
       if (editingId) {
-        // --- MODO EDIÇÃO ---
+        // --- MODO EDIÇÃO (ATUALIZAR) ---
         const docRef = doc(db, "inscrição", editingId);
         await updateDoc(docRef, {
           name: formData.name,
@@ -143,7 +151,7 @@ const JuntosSomosMaisFinal = () => {
         });
 
       } else {
-        // --- MODO CRIAÇÃO (SEQUENCIAL) ---
+        // --- MODO CRIAÇÃO (NOVA) ---
         const qEmail = query(inscricoesRef, where("email", "==", formData.email));
         const emailCheck = await getDocs(qEmail);
 
@@ -190,7 +198,7 @@ const JuntosSomosMaisFinal = () => {
       setIsFreshRegistration(true);
       triggerConfetti();
       setSuccess(true);
-      setEditingId(null);
+      setEditingId(null); // Limpa o modo edição
       setFormData({ name: '', email: '', team: '', level: '', health: '', health_details: '', termsAccepted: false });
 
     } catch (error: any) {
@@ -227,7 +235,7 @@ const JuntosSomosMaisFinal = () => {
         termsAccepted: true
       });
       setEditingId(confirmedData.id); 
-      setConfirmedData(null);
+      setConfirmedData(null); // Esconde o ticket para mostrar o formulário
       setSuccess(false);
       setTimeout(() => {
         const section = document.getElementById('inscricao');
@@ -236,7 +244,19 @@ const JuntosSomosMaisFinal = () => {
     }
   };
 
-  const shareText = confirmedData ? encodeURIComponent(`Fala! Me inscrevi no Treino Invasores. Sou o nº ${confirmedData.numero_inscricao}. Bora?`) : "";
+  // === NOVA FUNÇÃO: CANCELAR EDIÇÃO ===
+  const handleCancelEdit = () => {
+    // Restaura os dados do LocalStorage para voltar a mostrar o ticket
+    const dadosSalvos = localStorage.getItem('invasores_inscricao_real_db_v2');
+    if (dadosSalvos) {
+      setConfirmedData(JSON.parse(dadosSalvos));
+    }
+    // Limpa o estado de edição
+    setEditingId(null);
+    setFormData({ name: '', email: '', team: '', level: '', health: '', health_details: '', termsAccepted: false });
+  };
+
+  const shareText = encodeURIComponent(`Fala! Me inscrevi no Juntos Somos +. Bora? Inscreva-se também: https://uniao-em-equipes-camaragibe.netlify.app/`);
   const shareLink = `https://wa.me/?text=${shareText}`;
 
   return (
@@ -254,8 +274,13 @@ const JuntosSomosMaisFinal = () => {
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="w-full max-w-sm relative flex flex-col items-center gap-6 my-10"
             >
-              <button onClick={handleCloseModal} className="absolute -top-12 right-0 text-white/70 hover:text-white transition-colors p-2 bg-white/10 rounded-full flex items-center gap-2 backdrop-blur-md border border-white/10">
-                <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:block">Fechar</span><X size={20} />
+              
+              <button 
+                onClick={handleCloseModal} 
+                className="absolute -top-12 right-2 text-white/90 hover:text-white transition-colors p-3 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 z-[10000] active:scale-95"
+              >
+                <X size={24} />
+                <span className="sr-only">Fechar</span>
               </button>
 
               <div className="w-full bg-white rounded-3xl overflow-hidden shadow-2xl relative transform transition-all">
@@ -279,7 +304,7 @@ const JuntosSomosMaisFinal = () => {
                   </div>
                   <div className="flex justify-between text-xs font-bold text-gray-400 uppercase tracking-wide px-4">
                      <span className="flex items-center gap-1"><Activity size={12} className="text-orange-500"/> {confirmedData.level}</span>
-                     <span className="flex items-center gap-1"><Calendar size={12} className="text-blue-900"/> 28 FEVEREIRO • 19h00</span>
+                     <span className="flex items-center gap-1"><Calendar size={12} className="text-blue-900"/> 26 FEVEREIRO • 19h00</span>
                   </div>
                   {isFreshRegistration && (
                     <div className="absolute bottom-0 left-0 w-full bg-yellow-400 text-blue-900 text-[10px] font-bold p-2 text-center flex items-center justify-center gap-2 animate-pulse"><Loader2 className="animate-spin w-3 h-3" /> Redirecionando para WhatsApp...</div>
@@ -305,7 +330,7 @@ const JuntosSomosMaisFinal = () => {
         <div className="w-full max-w-4xl mx-auto pt-0"><img src={flyerImage} alt="Banner" className="w-full h-auto object-contain block mx-auto" /></div>
         <div className="px-4 mt-6">
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="max-w-4xl mx-auto bg-white text-blue-900 rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
-            <div className="flex items-center gap-4 w-full md:w-auto"><div className="bg-yellow-400 p-3 md:p-4 rounded-2xl shadow-lg shadow-yellow-400/20 shrink-0"><Calendar size={28} className="text-blue-900" /></div><div><p className="font-extrabold text-[10px] md:text-xs uppercase text-gray-400 tracking-widest mb-1">Data</p><h3 className="text-2xl md:text-3xl font-black text-blue-900 leading-none">28 FEVEREIRO</h3></div></div>
+            <div className="flex items-center gap-4 w-full md:w-auto"><div className="bg-yellow-400 p-3 md:p-4 rounded-2xl shadow-lg shadow-yellow-400/20 shrink-0"><Calendar size={28} className="text-blue-900" /></div><div><p className="font-extrabold text-[10px] md:text-xs uppercase text-gray-400 tracking-widest mb-1">Data</p><h3 className="text-2xl md:text-3xl font-black text-blue-900 leading-none">26 FEVEREIRO</h3></div></div>
             <div className="hidden md:block w-px h-12 bg-gray-100"></div>
             <div className="flex items-center gap-4 w-full md:w-auto"><div className="bg-yellow-400 p-3 md:p-4 rounded-2xl shadow-lg shadow-yellow-400/20 shrink-0"><MapPin size={28} className="text-blue-900" /></div><div><p className="font-extrabold text-[10px] md:text-xs uppercase text-gray-400 tracking-widest mb-1">Local</p><h3 className="text-2xl md:text-3xl font-black text-blue-900 leading-none whitespace-nowrap">Praça de <p>Camaragibe</p></h3></div></div>
             <div className="hidden md:block w-px h-12 bg-gray-100"></div>
@@ -367,9 +392,23 @@ const JuntosSomosMaisFinal = () => {
                 <div className="flex items-start gap-3 mt-2 pt-2"><input type="checkbox" required id="terms" checked={formData.termsAccepted} onChange={e => setFormData({...formData, termsAccepted: e.target.checked})} className="mt-1 peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-blue-200 checked:bg-blue-900 checked:border-blue-900 bg-white" /><label htmlFor="terms" className="text-xs text-blue-900 font-bold cursor-pointer select-none leading-relaxed">Eu autorizo o uso da minha imagem e declaro estar apto fisicamente.</label></div>
                 {errorMsg && <div className="bg-red-50 border border-red-200 text-red-600 text-xs font-bold p-3 rounded-lg flex items-center gap-2"><AlertCircle size={16} /> {errorMsg}</div>}
                 
-                <motion.button disabled={loading} whileHover={hoverEffect} whileTap={tapEffect} className="w-full bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-black text-lg py-5 rounded-xl shadow-lg shadow-yellow-400/20 flex items-center justify-center gap-3 uppercase tracking-wider mt-6 disabled:opacity-50">
-                  {loading ? <Loader2 className="animate-spin" /> : <>Confirmar Presença <ChevronRight size={20} strokeWidth={3} /></>}
-                </motion.button>
+                {/* === BOTÕES: CONFIRMAR, SALVAR E CANCELAR === */}
+                <div className="space-y-3 mt-6">
+                  <motion.button disabled={loading} whileHover={hoverEffect} whileTap={tapEffect} className="w-full bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-black text-lg py-5 rounded-xl shadow-lg shadow-yellow-400/20 flex items-center justify-center gap-3 uppercase tracking-wider disabled:opacity-50">
+                    {loading ? <Loader2 className="animate-spin" /> : <>{editingId ? "Salvar Alterações" : "Confirmar Presença"} <ChevronRight size={20} strokeWidth={3} /></>}
+                  </motion.button>
+
+                  {editingId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-4 rounded-xl transition-colors uppercase tracking-wider text-xs"
+                    >
+                      Cancelar Edição
+                    </button>
+                  )}
+                </div>
+
               </form>
             )}
           </div>
