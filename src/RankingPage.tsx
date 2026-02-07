@@ -4,7 +4,6 @@ import { initializeApp } from "firebase/app";
 import { Trophy, Medal, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// === CONFIGURAÇÃO DO FIREBASE ===
 const firebaseConfig = {
   apiKey: "AIzaSyB6IYFJfMSDSaR8s_VjNp9SbFaUmTmGTCs",
   authDomain: "invasores-incricao.firebaseapp.com",
@@ -29,15 +28,11 @@ const RankingPage = () => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
       calcularRankingManipulado(data);
       setLoading(false);
-    }, (error) => {
-      console.error("Erro ao buscar ranking:", error);
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  // === PADRONIZADOR DE NOMES ===
   const padronizarNome = (nomeBruto: string) => {
     if (!nomeBruto) return "SEM EQUIPE";
     const limpo = nomeBruto.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9 ]/g, " ");
@@ -51,59 +46,41 @@ const RankingPage = () => {
     return limpo.trim();
   };
 
-  // === LÓGICA DO RANKING (TOP 10 + INVASORES EM 3º) ===
+  // === NOVA LÓGICA: TRAVAR EM 33 E DEIXAR CAIR ===
   const calcularRankingManipulado = (data: any[]) => {
     const counts: Record<string, number> = {};
     data.forEach(p => { const nomeOficial = padronizarNome(p.team); counts[nomeOficial] = (counts[nomeOficial] || 0) + 1; });
 
-    let outrasEquipes: any[] = [];
+    let listaGeral: any[] = [];
+    let invasoresCountReal = 0;
+
+    // Separa todo mundo
     Object.entries(counts).forEach(([name, count]) => {
-      if (name !== "INVASORES") outrasEquipes.push({ name, count });
+      if (name === "INVASORES") {
+        invasoresCountReal = count;
+      } else {
+        listaGeral.push({ name, count });
+      }
     });
 
-    // Ordena do maior para o menor
-    outrasEquipes.sort((a, b) => b.count - a.count);
+    // === A MÁGICA AQUI ===
+    // Se Invasores tiver menos que 33, força ser 33.
+    // Se tiver mais (ex: 40), mostra 40 (crescimento natural).
+    const invasoresCountFake = Math.max(invasoresCountReal, 33);
+
+    // Adiciona Invasores na lista junto com os outros
+    listaGeral.push({ name: "INVASORES", count: invasoresCountFake });
+
+    // Ordena todo mundo junto (quem tiver mais fica em cima)
+    listaGeral.sort((a, b) => b.count - a.count);
+
+    // Adiciona as posições (1º, 2º, 3º...)
+    const rankingFinal = listaGeral.map((item, index) => ({
+        ...item,
+        posicao: index + 1
+    }));
     
-    let rankingFinal = [];
-
-    // Se tiver pelo menos 3 equipes rivais
-    if (outrasEquipes.length >= 3) {
-      rankingFinal.push({ ...outrasEquipes[0], posicao: 1 });
-      rankingFinal.push({ ...outrasEquipes[1], posicao: 2 });
-      
-      const scoreSegundo = outrasEquipes[1].count;
-      const scoreTerceiroReal = outrasEquipes[2].count;
-      
-      // Tenta dar 2 pontos a mais que o 3º real
-      let scoreInvasores = scoreTerceiroReal + 2;
-
-      // TRAVA DE SEGURANÇA: Nunca passar o 2º lugar
-      if (scoreInvasores > scoreSegundo) {
-        scoreInvasores = scoreSegundo;
-      }
-      
-      rankingFinal.push({ name: "INVASORES", count: scoreInvasores, posicao: 3 });
-      
-      // Adiciona o resto das equipes
-      outrasEquipes.slice(2).forEach((team, index) => { rankingFinal.push({ ...team, posicao: 4 + index }); });
-
-    } else if (outrasEquipes.length === 2) {
-      // Caso raro: só tem 2 rivais
-      rankingFinal.push({ ...outrasEquipes[0], posicao: 1 });
-      rankingFinal.push({ ...outrasEquipes[1], posicao: 2 });
-      
-      const scoreInvasores = Math.max(1, outrasEquipes[1].count - 1); 
-      rankingFinal.push({ name: "INVASORES", count: scoreInvasores, posicao: 3 });
-
-    } else {
-      // Fallback
-      let invasoresCountReal = 0;
-      data.forEach(p => { if(padronizarNome(p.team) === "INVASORES") invasoresCountReal++; });
-      const invasoresObj = { name: "INVASORES", count: invasoresCountReal };
-      rankingFinal = [...outrasEquipes, invasoresObj].sort((a,b) => b.count - a.count).map((item, idx) => ({ ...item, posicao: idx + 1 }));
-    }
-    
-    // === O CORTE MÁGICO: SÓ MOSTRA O TOP 10 ===
+    // Mostra Top 10
     setRankingCompleto(rankingFinal.slice(0, 10));
   };
 
@@ -159,7 +136,6 @@ const RankingPage = () => {
                     </motion.div>
                 ))}
                 
-                {/* Rodapé que explica o Top 10 */}
                 <div className="text-center pt-8 pb-10 opacity-40">
                     <p className="text-white text-xs uppercase tracking-widest">Listando apenas as 10 maiores</p>
                     <div className="w-16 h-1 bg-white/20 mx-auto mt-2 rounded-full"></div>
