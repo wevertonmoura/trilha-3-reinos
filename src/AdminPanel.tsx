@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, getFirestore, deleteDoc, doc } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
-import { Trophy, Activity, ArrowLeft, Search, Users, X, RotateCcw, Trash2, MonitorPlay, Medal, Crown } from 'lucide-react';
+import { Trophy, Activity, ArrowLeft, Search, Users, X, RotateCcw, Trash2, MonitorPlay, Medal, Crown, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // === CONFIGURAÇÃO DO FIREBASE ===
@@ -22,7 +22,7 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
   const [modoTV, setModoTV] = useState(false);
-  const [rankingCompleto, setRankingCompleto] = useState<any[]>([]); // Mudamos de Top5 para Completo
+  const [rankingCompleto, setRankingCompleto] = useState<any[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ const AdminPanel = () => {
     return limpo.trim();
   };
 
-  // === LÓGICA DO RANKING COMPLETO ===
+  // === LÓGICA DO RANKING (AGORA COM A TRAVA DE SEGURANÇA) ===
   const calcularRankingManipulado = (data: any[]) => {
     const counts: Record<string, number> = {};
     
@@ -88,34 +88,49 @@ const AdminPanel = () => {
 
     let rankingFinal = [];
 
-    // Lógica da Manipulação (Invasores em 3º)
-    if (outrasEquipes.length >= 2) {
-      // 1. Adiciona o 1º Lugar REAL
+    // Precisamos de pelo menos 3 equipes rivais para "roubar" o 3º lugar
+    if (outrasEquipes.length >= 3) {
       rankingFinal.push({ ...outrasEquipes[0], posicao: 1 });
-      
-      // 2. Adiciona o 2º Lugar REAL
       rankingFinal.push({ ...outrasEquipes[1], posicao: 2 });
 
-      // 3. Adiciona INVASORES em 3º (Fake Count)
-      const countSegundoLugar = outrasEquipes[1].count;
-      const countInvasoresFake = Math.max(1, countSegundoLugar - 3);
-      rankingFinal.push({ name: "INVASORES", count: countInvasoresFake, posicao: 3 });
+      // === AQUI ESTÁ A LÓGICA SEGURA ===
+      const scoreSegundo = outrasEquipes[1].count;
+      const scoreTerceiroReal = outrasEquipes[2].count;
+      
+      // 1. Tenta dar 2 pontos a mais que a vítima
+      let scoreInvasores = scoreTerceiroReal + 2;
 
-      // 4. Adiciona TODAS as outras equipes restantes (do índice 2 em diante)
-      // Elas ocuparão do 4º lugar para baixo
+      // 2. TRAVA: Se passar do 2º colocado, empata com ele
+      if (scoreInvasores > scoreSegundo) {
+        scoreInvasores = scoreSegundo;
+      }
+      
+      rankingFinal.push({ name: "INVASORES", count: scoreInvasores, posicao: 3 });
+
+      // Adiciona o resto das equipes (A vítima cai para 4º)
       outrasEquipes.slice(2).forEach((team, index) => {
         rankingFinal.push({ ...team, posicao: 4 + index });
       });
 
+    } else if (outrasEquipes.length === 2) {
+      rankingFinal.push({ ...outrasEquipes[0], posicao: 1 });
+      rankingFinal.push({ ...outrasEquipes[1], posicao: 2 });
+      
+      // Trava também no caso de 2 equipes
+      const scoreInvasores = Math.max(1, outrasEquipes[1].count - 1);
+      rankingFinal.push({ name: "INVASORES", count: scoreInvasores, posicao: 3 });
+
     } else {
-      // Fallback para poucos dados
+      // Fallback
       const invasoresObj = { name: "INVASORES", count: invasoresCountReal };
       rankingFinal = [...outrasEquipes, invasoresObj]
         .sort((a,b) => b.count - a.count)
         .map((item, idx) => ({ ...item, posicao: idx + 1 }));
     }
 
-    setRankingCompleto(rankingFinal);
+    // Opcional: Cortar Top 10 aqui também se quiser
+    // setRankingCompleto(rankingFinal.slice(0, 10));
+    setRankingCompleto(rankingFinal); 
   };
 
   const handleRefresh = () => setRefreshKey(prev => prev + 1);
@@ -141,17 +156,14 @@ const AdminPanel = () => {
   if (modoTV) {
     return (
       <div className="fixed inset-0 bg-slate-950 flex flex-col items-center p-4 overflow-hidden font-sans z-[9999]">
-        {/* Fundo Premium */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900 via-slate-950 to-black opacity-100"></div>
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
         
-        {/* Botão Fechar */}
         <button onClick={() => setModoTV(false)} className="absolute top-8 right-8 text-white/20 hover:text-white transition-colors z-50">
             <X size={40} strokeWidth={1.5} />
         </button>
 
         <div className="relative z-10 w-full max-w-4xl flex flex-col items-center h-full">
-            
             <header className="text-center mb-8 mt-4 flex-shrink-0">
                 <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-6 py-2 mb-4 backdrop-blur-md">
                     <Trophy className="text-yellow-400" size={18} />
@@ -162,7 +174,6 @@ const AdminPanel = () => {
                 </h1>
             </header>
 
-            {/* LISTA COM SCROLL */}
             <div className="w-full flex-1 overflow-y-auto px-4 pb-20 space-y-4 scrollbar-hide">
                 {rankingCompleto.map((team, index) => (
                     <motion.div 
@@ -177,11 +188,9 @@ const AdminPanel = () => {
                             "bg-slate-800/80 border border-slate-700 backdrop-blur-sm text-slate-300 hover:bg-slate-700/80"
                         }`}
                     >
-                        {/* Efeito de brilho para o líder */}
                         {team.posicao === 1 && <div className="absolute inset-0 bg-white/20 animate-pulse rounded-2xl"></div>}
 
                         <div className="flex items-center gap-4 md:gap-6 relative z-10">
-                            {/* Ícone de Posição */}
                             <div className={`w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-xl shadow-inner shrink-0 ${
                                 team.posicao === 1 ? "bg-yellow-600 text-white" :
                                 team.posicao === 2 ? "bg-slate-400 text-white" :
@@ -203,7 +212,6 @@ const AdminPanel = () => {
                             </div>
                         </div>
 
-                        {/* Contagem */}
                         <div className={`text-right min-w-[80px] relative z-10 ${team.posicao <= 3 ? "text-slate-900" : "text-white"}`}>
                             <span className="block font-black text-3xl md:text-5xl leading-none">{team.count}</span>
                             <span className={`text-[9px] font-bold uppercase tracking-wider ${team.posicao <= 3 ? "opacity-70" : "opacity-40"}`}>Inscritos</span>
@@ -211,7 +219,6 @@ const AdminPanel = () => {
                     </motion.div>
                 ))}
                 
-                {/* Rodapé do Ranking */}
                 <div className="text-center pt-8 pb-10 opacity-40">
                     <p className="text-white text-xs uppercase tracking-widest">Fim da Lista</p>
                     <div className="w-16 h-1 bg-white/20 mx-auto mt-2 rounded-full"></div>
@@ -238,8 +245,13 @@ const AdminPanel = () => {
             </div>
             <div className="flex gap-2">
                 <button onClick={handleRefresh} title="Atualizar" className="bg-blue-900 p-2 rounded-xl active:scale-95 group"><RotateCcw size={20} className="group-hover:rotate-180 transition-transform text-blue-200" /></button>
+                {/* Botão Interno */}
                 <button onClick={() => setModoTV(true)} className="bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-xl font-bold uppercase text-xs flex items-center gap-2 shadow-lg shadow-yellow-400/20 active:scale-95 transition-all">
                     <MonitorPlay size={16} /> Ver Ranking
+                </button>
+                {/* Botão Link Externo */}
+                <button onClick={() => window.open('/ranking', '_blank')} className="bg-blue-800 hover:bg-blue-700 text-blue-200 px-3 py-2 rounded-xl active:scale-95 transition-all" title="Abrir página pública">
+                    <ExternalLink size={16} />
                 </button>
             </div>
           </div>

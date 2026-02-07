@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, MapPin, Trophy, Users, CheckCircle2, User, Mail, ChevronRight, Instagram, Clock, Activity, Flag, ChevronDown, ArrowRight, Share2, Loader2, AlertCircle, X, Ticket, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-
+import RankingPage from './RankingPage'; // <--- IMPORTANTE: Adicione essa importação no topo!
 import AdminPanel from './AdminPanel';
 
 // === 1. IMPORTAÇÕES DO FIREBASE ===
@@ -51,10 +51,15 @@ const itemStagger: Variants = {
 };
 
 const JuntosSomosMaisFinal = () => {
-  const isAdmPage = window.location.pathname === '/adm';
+  // === CORREÇÃO: Definir a variável 'path' antes de usar ===
+  const path = window.location.pathname;
 
-  if (isAdmPage) {
+  if (path === '/adm') {
     return <AdminPanel />;
+  }
+
+  if (path === '/ranking') {
+    return <RankingPage />;
   }
 
   // === ESTADOS ===
