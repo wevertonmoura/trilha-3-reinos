@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, Users, CheckCircle2, User, Mail, ChevronRight, Instagram, Clock, Activity, Flag, ChevronDown, ArrowRight, Share2, Loader2, AlertCircle, X, Ticket, Edit3 } from 'lucide-react';
+import { Calendar, MapPin, Trophy, Users, CheckCircle2, User, Mail, ChevronRight, Instagram, Clock, Activity, Flag, ChevronDown, ArrowRight, Share2, Loader2, AlertCircle, X, Ticket, Edit3, Lock } from 'lucide-react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import RankingPage from './RankingPage'; // <--- IMPORTANTE: Adicione essa importação no topo!
+import RankingPage from './RankingPage'; 
 import AdminPanel from './AdminPanel';
 
 // === 1. IMPORTAÇÕES DO FIREBASE ===
@@ -50,10 +50,13 @@ const itemStagger: Variants = {
   show: { opacity: 1, x: 0 }
 };
 
+// === 🚨 CONTROLE DE MANUTENÇÃO 🚨 ===
+const MODO_MANUTENCAO = true; // true = Bloqueia SÓ O FORMULÁRIO false
+
 const JuntosSomosMaisFinal = () => {
-  // === CORREÇÃO: Definir a variável 'path' antes de usar ===
   const path = window.location.pathname;
 
+  // === ROTEAMENTO SIMPLES ===
   if (path === '/adm') {
     return <AdminPanel />;
   }
@@ -62,7 +65,7 @@ const JuntosSomosMaisFinal = () => {
     return <RankingPage />;
   }
 
-  // === ESTADOS ===
+  // === ESTADOS DO FORMULÁRIO ===
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -203,7 +206,7 @@ const JuntosSomosMaisFinal = () => {
       setIsFreshRegistration(true);
       triggerConfetti();
       setSuccess(true);
-      setEditingId(null); // Limpa o modo edição
+      setEditingId(null); 
       setFormData({ name: '', email: '', team: '', level: '', health: '', health_details: '', termsAccepted: false });
 
     } catch (error: any) {
@@ -240,7 +243,7 @@ const JuntosSomosMaisFinal = () => {
         termsAccepted: true
       });
       setEditingId(confirmedData.id); 
-      setConfirmedData(null); // Esconde o ticket para mostrar o formulário
+      setConfirmedData(null); 
       setSuccess(false);
       setTimeout(() => {
         const section = document.getElementById('inscricao');
@@ -249,14 +252,11 @@ const JuntosSomosMaisFinal = () => {
     }
   };
 
-  // === NOVA FUNÇÃO: CANCELAR EDIÇÃO ===
   const handleCancelEdit = () => {
-    // Restaura os dados do LocalStorage para voltar a mostrar o ticket
     const dadosSalvos = localStorage.getItem('invasores_inscricao_real_db_v2');
     if (dadosSalvos) {
       setConfirmedData(JSON.parse(dadosSalvos));
     }
-    // Limpa o estado de edição
     setEditingId(null);
     setFormData({ name: '', email: '', team: '', level: '', health: '', health_details: '', termsAccepted: false });
   };
@@ -299,17 +299,17 @@ const JuntosSomosMaisFinal = () => {
                   <div className="absolute -right-4 top-0 w-8 h-8 bg-blue-900 rounded-full"></div>
                   <div className="border-t-2 border-dashed border-gray-200 mb-8 mx-2"></div>
                   <div className="text-center space-y-2 mb-8">
-                     <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-green-200 mb-2"><CheckCircle2 size={12} /> Inscrição Confirmada</div>
-                     <h3 className="text-4xl font-black text-slate-800 uppercase leading-none break-words">{confirmedData.name}</h3>
-                     <p className="text-slate-400 font-bold text-sm uppercase tracking-wider">Inscrição nº {confirmedData.numero_inscricao}</p>
+                      <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-green-200 mb-2"><CheckCircle2 size={12} /> Inscrição Confirmada</div>
+                      <h3 className="text-4xl font-black text-slate-800 uppercase leading-none break-words">{confirmedData.name}</h3>
+                      <p className="text-slate-400 font-bold text-sm uppercase tracking-wider">Inscrição nº {confirmedData.numero_inscricao}</p>
                   </div>
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center mb-6">
                     <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Equipe</p>
                     <p className="text-blue-900 font-black text-2xl uppercase italic">{confirmedData.team}</p>
                   </div>
                   <div className="flex justify-between text-xs font-bold text-gray-400 uppercase tracking-wide px-4">
-                     <span className="flex items-center gap-1"><Activity size={12} className="text-orange-500"/> {confirmedData.level}</span>
-                     <span className="flex items-center gap-1"><Calendar size={12} className="text-blue-900"/> 26 FEVEREIRO • 19h00</span>
+                      <span className="flex items-center gap-1"><Activity size={12} className="text-orange-500"/> {confirmedData.level}</span>
+                      <span className="flex items-center gap-1"><Calendar size={12} className="text-blue-900"/> 26 FEVEREIRO • 08h00</span>
                   </div>
                   {isFreshRegistration && (
                     <div className="absolute bottom-0 left-0 w-full bg-yellow-400 text-blue-900 text-[10px] font-bold p-2 text-center flex items-center justify-center gap-2 animate-pulse"><Loader2 className="animate-spin w-3 h-3" /> Redirecionando para WhatsApp...</div>
@@ -348,12 +348,12 @@ const JuntosSomosMaisFinal = () => {
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div><span className="text-yellow-500 font-bold uppercase tracking-widest text-xs mb-2 block">O Movimento</span><h2 className="text-4xl font-black text-blue-900 italic uppercase mb-6 leading-none">Juntos <br/> Somos +</h2><div className="space-y-4 text-gray-600 font-medium leading-relaxed text-sm md:text-base"><p>Prepare-se para um treino incrível! Convidamos você e sua equipe para mostrar a força do nosso movimento nas ruas de Camaragibe.</p><p>Nosso objetivo é incentivar as pessoas a correrem, promovendo <strong>saúde, união e motivação</strong>.</p></div></div>
           <div className="bg-white p-8 rounded-3xl shadow-lg border border-gray-200/50 relative overflow-hidden">
-             <h3 className="text-xl font-black text-blue-900 uppercase mb-6 flex items-center gap-2"><Clock size={24} className="text-yellow-400"/> Cronograma</h3>
-             <div className="space-y-6">
-               <ScheduleItem icon={<Users size={20} className="text-blue-900"/>} time="19h00" label="Concentração" desc="Encontro das equipes na Praça de Camaragibe."/>
-               <ScheduleItem icon={<Flag size={20} className="text-blue-900"/>} time="19h30" label="Saída" desc="Largada pontual do treino."/>
-               <ScheduleItem icon={<Activity size={20} className="text-blue-900"/>} time="5km" label="Percurso Leve" desc="Ideal para todos os ritmos."/>
-             </div>
+              <h3 className="text-xl font-black text-blue-900 uppercase mb-6 flex items-center gap-2"><Clock size={24} className="text-yellow-400"/> Cronograma</h3>
+              <div className="space-y-6">
+                <ScheduleItem icon={<Users size={20} className="text-blue-900"/>} time="19h00" label="Concentração" desc="Encontro das equipes na Praça de Camaragibe."/>
+                <ScheduleItem icon={<Flag size={20} className="text-blue-900"/>} time="08h00" label="Saída" desc="Largada pontual do treino."/>
+                <ScheduleItem icon={<Activity size={20} className="text-blue-900"/>} time="5km" label="Percurso Leve" desc="Ideal para todos os ritmos."/>
+              </div>
           </div>
         </div>
       </motion.section>
@@ -361,16 +361,18 @@ const JuntosSomosMaisFinal = () => {
       <motion.section id="inscricao" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={fadeInUp} className="container mx-auto px-4 pb-24 bg-gray-100">
         <div className="max-w-5xl mx-auto bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-gray-200">
           <div className="bg-blue-900 p-8 md:p-12 lg:w-5/12 text-white relative flex flex-col justify-between overflow-hidden">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400 rounded-full blur-[120px] opacity-10 transform translate-x-1/2 -translate-y-1/2"></div>
-             <div className="relative z-10"><div className="inline-block bg-yellow-400 text-blue-900 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider mb-6">Estrutura Completa</div><h2 className="text-3xl md:text-4xl font-black italic uppercase leading-none mb-6 text-white">Garanta <br/>sua Vaga</h2><p className="text-blue-200 leading-relaxed font-medium text-sm">Para garantir a melhor experência, teremos uma estrutura especial esperando por você.</p></div>
-             <motion.div variants={containerStagger} initial="hidden" whileInView="show" viewport={{ once: true }} className="relative z-10 mt-10 space-y-5">
-               <motion.div variants={itemStagger}><FeatureRow icon={<CheckCircle2 size={18}/>} text="Equipe de Fotos" /></motion.div>
-               <motion.div variants={itemStagger}><FeatureRow icon={<CheckCircle2 size={18}/>} text="Hidratação" /></motion.div>
-               <motion.div variants={itemStagger}><FeatureRow icon={<CheckCircle2 size={18}/>} text="Guarda-Volumes" /></motion.div>
-               <motion.div variants={itemStagger}><FeatureRow icon={<CheckCircle2 size={18}/>} text="Musicas" /></motion.div>
-             </motion.div>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400 rounded-full blur-[120px] opacity-10 transform translate-x-1/2 -translate-y-1/2"></div>
+              <div className="relative z-10"><div className="inline-block bg-yellow-400 text-blue-900 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider mb-6">Estrutura Completa</div><h2 className="text-3xl md:text-4xl font-black italic uppercase leading-none mb-6 text-white">Garanta <br/>sua Vaga</h2><p className="text-blue-200 leading-relaxed font-medium text-sm">Para garantir a melhor experência, teremos uma estrutura especial esperando por você.</p></div>
+              <motion.div variants={containerStagger} initial="hidden" whileInView="show" viewport={{ once: true }} className="relative z-10 mt-10 space-y-5">
+                <motion.div variants={itemStagger}><FeatureRow icon={<CheckCircle2 size={18}/>} text="Equipe de Fotos" /></motion.div>
+                <motion.div variants={itemStagger}><FeatureRow icon={<CheckCircle2 size={18}/>} text="Hidratação" /></motion.div>
+                <motion.div variants={itemStagger}><FeatureRow icon={<CheckCircle2 size={18}/>} text="Guarda-Volumes" /></motion.div>
+                <motion.div variants={itemStagger}><FeatureRow icon={<CheckCircle2 size={18}/>} text="Musicas" /></motion.div>
+              </motion.div>
           </div>
           <div className="p-6 md:p-10 lg:w-7/12 bg-blue-50/50 relative">
+            
+            {/* LOGICA DE EXIBIÇÃO: Ticket > Manutenção > Formulário */}
             {confirmedData ? (
               <div className="h-full flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500 py-10">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600 shadow-sm border border-green-200"><Ticket size={40} strokeWidth={2} /></div>
@@ -384,20 +386,40 @@ const JuntosSomosMaisFinal = () => {
                   </div>
                 </div>
               </div>
+            ) : MODO_MANUTENCAO ? (
+               // === CARD DE MANUTENÇÃO (APENAS AQUI) ===
+               <div className="h-full flex flex-col items-center justify-center text-center py-10 px-4 space-y-6">
+                 <div className="w-20 h-20 bg-slate-900/5 rounded-full flex items-center justify-center border-2 border-slate-900/10 mb-2">
+                    <Lock className="text-slate-900" size={32} />
+                 </div>
+                 <div>
+                    <h2 className="text-2xl font-black text-slate-900 uppercase italic leading-none mb-2">Inscrições <br/><span className="text-yellow-500">Pausadas</span> 🚀</h2>
+                    <p className="text-slate-500 text-sm font-medium max-w-xs mx-auto">
+                        Devido ao sucesso de acessos, estamos em manutenção programada para segurança dos dados.
+                    </p>
+                 </div>
+                 
+                 <div className="bg-white border border-blue-100 p-4 rounded-xl flex items-center gap-4 shadow-sm w-full max-w-xs">
+                    <Clock className="text-blue-600" size={24} />
+                    <div className="text-left">
+                        <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Retorno Previsto</p>
+                        <p className="text-blue-900 font-bold text-lg">Amanhã (08/02) às 08:00h</p>
+                    </div>
+                 </div>
+               </div>
             ) : (
+              // === FORMULÁRIO (SÓ APARECE SE NÃO ESTIVER EM MANUTENÇÃO) ===
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="mb-8 border-b border-blue-100 pb-4"><h3 className="text-2xl font-black text-blue-900 uppercase italic flex items-center gap-2">Inscreva-se <span className="text-yellow-400 text-4xl">.</span></h3><p className="text-blue-900/60 text-xs font-bold uppercase tracking-wider mt-1">Preencha seus dados abaixo</p></div>
                 <div className="space-y-2"><label className="text-xs font-black text-blue-900 uppercase tracking-wider ml-1">Nome</label><div className={`flex items-center bg-white shadow-sm border focus-within:ring-4 focus-within:ring-blue-900/10 rounded-xl px-4 py-4 transition-all ${errors.name ? 'border-red-400' : 'border-blue-100 focus-within:border-blue-900'}`}><span className="text-blue-900 mr-3"><User size={18}/></span><input ref={nameInputRef} type="text" className="w-full bg-transparent outline-none font-bold text-blue-900 placeholder:text-blue-900/40 text-sm" placeholder="Ex: João Corredor" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div></div>
                 <InputGroup label="E-mail" icon={<Mail size={18}/>} placeholder="exemplo@email.com" value={formData.email} onChange={(e:any) => setFormData({...formData, email: e.target.value})} error={errors.email} />
                 
-                {/* CAMPO DE EQUIPE VOLTOU A SER TEXTO SIMPLES */}
                 <InputGroup label="Equipe" icon={<Trophy size={18}/>} placeholder="Sua equipe ou deixe vazio" value={formData.team} onChange={(e:any) => setFormData({...formData, team: e.target.value})} />
                 
                 <div className="space-y-2"><label className="text-xs font-black text-blue-900 uppercase tracking-wider ml-1">Seu Nível de Corrida</label><div className="flex items-center bg-white shadow-sm border border-blue-100 focus-within:border-blue-900 rounded-xl px-4 py-4 transition-all relative"><span className="text-blue-900 mr-3"><Activity size={18}/></span><select className="w-full bg-transparent outline-none font-bold text-blue-900 text-sm appearance-none cursor-pointer z-10" value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})}><option value="" disabled>Selecione seu nível...</option><option value="Iniciante">Iniciante</option><option value="Intermediário">Intermediário</option><option value="Avançado">Avançado</option></select><ChevronDown size={16} className="absolute right-4 text-blue-900" /></div></div>
                 <div className="flex items-start gap-3 mt-2 pt-2"><input type="checkbox" required id="terms" checked={formData.termsAccepted} onChange={e => setFormData({...formData, termsAccepted: e.target.checked})} className="mt-1 peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-blue-200 checked:bg-blue-900 checked:border-blue-900 bg-white" /><label htmlFor="terms" className="text-xs text-blue-900 font-bold cursor-pointer select-none leading-relaxed">Eu autorizo o uso da minha imagem e declaro estar apto fisicamente.</label></div>
                 {errorMsg && <div className="bg-red-50 border border-red-200 text-red-600 text-xs font-bold p-3 rounded-lg flex items-center gap-2"><AlertCircle size={16} /> {errorMsg}</div>}
                 
-                {/* === BOTÕES: CONFIRMAR, SALVAR E CANCELAR === */}
                 <div className="space-y-3 mt-6">
                   <motion.button disabled={loading} whileHover={hoverEffect} whileTap={tapEffect} className="w-full bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-black text-lg py-5 rounded-xl shadow-lg shadow-yellow-400/20 flex items-center justify-center gap-3 uppercase tracking-wider disabled:opacity-50">
                     {loading ? <Loader2 className="animate-spin" /> : <>{editingId ? "Salvar Alterações" : "Confirmar Presença"} <ChevronRight size={20} strokeWidth={3} /></>}
@@ -425,15 +447,15 @@ const JuntosSomosMaisFinal = () => {
         <div className="container mx-auto px-4 text-center relative z-10">
           <div className="mb-6"><p className="text-blue-500 text-[10px] font-bold uppercase tracking-[0.3em] mb-1 flex items-center justify-center gap-2"><span className="w-0.5 h-0.5 bg-yellow-400 rounded-full"></span> Organização Oficial<span className="w-0.5 h-0.5 bg-yellow-400 rounded-full"></span></p><span className="text-3xl md:text-4xl font-black text-white italic tracking-tighter hover:text-yellow-400 transition-colors cursor-default select-none shadow-blue-900 drop-shadow-lg">INVASORES</span></div>
           <div className="max-w-md mx-auto bg-blue-900/50 border border-blue-800 rounded-xl p-4 mb-6 backdrop-blur-sm relative overflow-hidden group">
-             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-             <h4 className="text-white font-bold uppercase tracking-wide mb-1 flex items-center justify-center gap-2 text-sm">Faça parte do time <Users size={14} className="text-yellow-400"/></h4>
-             <p className="text-blue-300 text-[11px] mb-4 px-2 leading-relaxed">O <strong>Juntos Somos +</strong> é só o começo. Acompanhe nossa rotina, tire dúvidas e venha correr com a gente.</p>
-             <div className="flex flex-col sm:flex-row gap-2">
-               <motion.a whileHover={hoverEffect} whileTap={tapEffect} href={INSTAGRAM_LINK} target="_blank" className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-black py-3 px-4 rounded-lg shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2 text-sm"><Instagram size={16} /> SIGA NO INSTA</motion.a>
-               <motion.a whileHover={hoverEffect} whileTap={tapEffect} href={FOOTER_WHATSAPP_LINK} target="_blank" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-black py-3 px-4 rounded-lg shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 text-sm">
-                 ENTRA NO GRUPO
-               </motion.a>
-             </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              <h4 className="text-white font-bold uppercase tracking-wide mb-1 flex items-center justify-center gap-2 text-sm">Faça parte do time <Users size={14} className="text-yellow-400"/></h4>
+              <p className="text-blue-300 text-[11px] mb-4 px-2 leading-relaxed">O <strong>Juntos Somos +</strong> é só o começo. Acompanhe nossa rotina, tire dúvidas e venha correr com a gente.</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <motion.a whileHover={hoverEffect} whileTap={tapEffect} href={INSTAGRAM_LINK} target="_blank" className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-black py-3 px-4 rounded-lg shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2 text-sm"><Instagram size={16} /> SIGA NO INSTA</motion.a>
+                <motion.a whileHover={hoverEffect} whileTap={tapEffect} href={FOOTER_WHATSAPP_LINK} target="_blank" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-black py-3 px-4 rounded-lg shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 text-sm">
+                  ENTRA NO GRUPO
+                </motion.a>
+              </div>
           </div>
           <div className="flex flex-col items-center gap-4 border-t border-blue-900/50 pt-4">
             <p className="text-blue-500/40 text-[10px] font-medium">© 2026 Grupo Invasores. Todos os direitos reservados.</p>

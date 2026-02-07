@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, getFirestore, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, query, getDocs, getFirestore, deleteDoc, doc, updateDoc } from "firebase/firestore"; // Troquei onSnapshot por getDocs
 import { initializeApp } from "firebase/app";
 import { Trophy, Activity, ArrowLeft, Search, Users, X, RotateCcw, Trash2, MonitorPlay, Medal, Crown, ExternalLink, Edit, Save, XCircle, Lock, BarChart3, Copy, Check, Download, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -48,34 +48,41 @@ const AdminPanel = () => {
     }
   };
 
-  useEffect(() => {
+  // === BUSCAR DADOS (ECONOMIA DE COTA) ===
+  // Substituímos o onSnapshot por getDocs. Só busca quando manda.
+  const buscarDados = async () => {
     if (!isAuthenticated) return;
-
-    setLoading(true);
-    const inscricoesRef = collection(db, "inscrição");
-    const q = query(inscricoesRef);
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-      const ordenados = data.sort((a, b) => Number(b.numero_inscricao) - Number(a.numero_inscricao));
-      
-      setInscritos(ordenados);
-      calcularRankingManipulado(data);
-      setLoading(false);
-    }, (error) => {
-      console.error("Erro ao buscar:", error);
-      setLoading(false);
-    });
+    setLoading(true);
+    try {
+        console.log("Baixando lista atualizada...");
+        const inscricoesRef = collection(db, "inscrição");
+        const q = query(inscricoesRef);
+        const snapshot = await getDocs(q); // Lê apenas UMA VEZ
+        
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        const ordenados = data.sort((a, b) => Number(b.numero_inscricao) - Number(a.numero_inscricao));
+        
+        setInscritos(ordenados);
+        calcularRankingManipulado(data);
+    } catch (error) {
+        console.error("Erro ao buscar:", error);
+        alert("Erro ao buscar dados. Tente atualizar.");
+    } finally {
+        setLoading(false);
+    }
+  };
 
-    return () => unsubscribe();
+  // Busca dados ao entrar ou clicar em Atualizar
+  useEffect(() => {
+    buscarDados();
   }, [refreshKey, isAuthenticated]);
 
-  // === PADRONIZADOR DE NOMES (REMOVE ACENTOS) ===
+  // === PADRONIZADOR DE NOMES ===
   const padronizarNome = (nomeBruto: string) => {
     if (!nomeBruto) return "SEM EQUIPE";
     const limpo = nomeBruto.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9 ]/g, " ");
     
-    // Correções automáticas de nomes de equipe
     if (limpo.includes("FORCA") && limpo.includes("HONRA")) return "FORÇA E HONRA";
     if (limpo.includes("INVASOR")) return "INVASORES";
     if (limpo.includes("CORRE") && (limpo.includes("CAMARA") || limpo.includes("GIBE"))) return "CORRE CAMARAGIBE";
@@ -85,7 +92,7 @@ const AdminPanel = () => {
     return limpo.trim();
   };
 
-  // === LÓGICA DO RANKING (TRAVA EM 33) ===
+  // === LÓGICA DO RANKING ===
   const calcularRankingManipulado = (data: any[]) => {
     const counts: Record<string, number> = {};
     data.forEach(p => { const nomeOficial = padronizarNome(p.team); counts[nomeOficial] = (counts[nomeOficial] || 0) + 1; });
@@ -105,19 +112,17 @@ const AdminPanel = () => {
     setRankingCompleto(rankingFinal); 
   };
 
+  // Botão de atualizar agora chama a busca manual
   const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
-  // === EXPORTAR PARA EXCEL (CSV) ===
   const handleExportExcel = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "Numero,Nome,Equipe,Nivel,Saude,Email\n"; 
-
     inscritos.forEach((p) => {
         const saude = p.health_details && p.health_details !== "N/A" ? p.health_details : "OK";
         const linha = `${p.numero_inscricao},"${p.name}","${p.team}",${p.level},"${saude}",${p.email}`;
         csvContent += linha + "\n";
     });
-
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -127,7 +132,6 @@ const AdminPanel = () => {
     document.body.removeChild(link);
   };
 
-  // === COPIAR E-MAILS ===
   const handleCopyEmails = () => {
     const listaParaCopiar = inscritosFiltrados.length > 0 ? inscritosFiltrados : inscritos;
     const emails = listaParaCopiar
@@ -140,19 +144,40 @@ const AdminPanel = () => {
     setTimeout(() => setCopiado(false), 2000);
   };
 
+  // === DELETE ECONÔMICO (NÃO RELÊ TUDO) ===
   const handleDelete = async (id: string, nome: string) => {
     if (window.confirm(`⚠️ TEM CERTEZA?\n\nIsso vai excluir permanentemente a inscrição de:\n${nome}`)) {
-        try { await deleteDoc(doc(db, "inscrição", id)); alert("Excluído com sucesso!"); } 
+        try { 
+            // 1. Apaga no Firebase
+            await deleteDoc(doc(db, "inscrição", id)); 
+            
+            // 2. Apaga da tela MANUALMENTE (Economiza 450 leituras)
+            const novaLista = inscritos.filter(p => p.id !== id);
+            setInscritos(novaLista);
+            calcularRankingManipulado(novaLista); // Recalcula ranking sem gastar cota
+            
+            alert("Excluído com sucesso!"); 
+        } 
         catch (error) { alert("Erro ao excluir."); }
     }
   };
 
+  // === EDIÇÃO ECONÔMICA (NÃO RELÊ TUDO) ===
   const iniciarEdicao = (id: string, timeAtual: string) => { setEditandoId(id); setNovoTime(timeAtual); };
   const cancelarEdicao = () => { setEditandoId(null); setNovoTime(""); };
+  
   const salvarEdicao = async (id: string) => {
     try {
+        const timeFormatado = novoTime.toUpperCase();
+        // 1. Atualiza no Firebase
         const docRef = doc(db, "inscrição", id);
-        await updateDoc(docRef, { team: novoTime.toUpperCase() });
+        await updateDoc(docRef, { team: timeFormatado });
+        
+        // 2. Atualiza na tela MANUALMENTE (Economia!)
+        const novaLista = inscritos.map(p => p.id === id ? { ...p, team: timeFormatado } : p);
+        setInscritos(novaLista);
+        calcularRankingManipulado(novaLista);
+
         setEditandoId(null);
     } catch (error) { alert("Erro ao atualizar."); }
   };
@@ -164,16 +189,12 @@ const AdminPanel = () => {
     avancado: inscritos.filter(i => i.level === 'Avançado').length
   };
 
-  // === FILTRO INTELIGENTE (CORRIGIDO PARA O BUG DO INTERMEDIARIO) ===
   const inscritosFiltrados = inscritos.filter((item) => {
     if (!busca) return true;
-    
-    // Padroniza tudo (remove acentos) para a busca bater certo
     const termo = padronizarNome(busca); 
     const equipe = padronizarNome(item.team);
     const nome = (item.name || "").toUpperCase();
-    const nivel = padronizarNome(item.level || ""); // AQUI O SEGREDO: Remove acento do nível também
-
+    const nivel = padronizarNome(item.level || "");
     return equipe.includes(termo) || nome.includes(termo.replace(" ", "")) || nivel.includes(termo);
   });
 
@@ -201,7 +222,7 @@ const AdminPanel = () => {
     );
   }
 
-  if (loading) return <div className="min-h-screen bg-blue-950 flex items-center justify-center text-white"><RotateCcw className="animate-spin mr-2"/> Carregando...</div>;
+  if (loading && inscritos.length === 0) return <div className="min-h-screen bg-blue-950 flex items-center justify-center text-white"><RotateCcw className="animate-spin mr-2"/> Carregando...</div>;
 
   if (modoTV) {
     return (
@@ -248,7 +269,7 @@ const AdminPanel = () => {
                 <div className="flex flex-wrap gap-2 w-full md:w-auto justify-start">
                     <button onClick={handleExportExcel} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl font-bold uppercase text-xs flex items-center gap-2 shadow-lg shadow-green-600/20 active:scale-95 transition-all"><Download size={16} /> Planilha</button>
                     <button onClick={handleCopyEmails} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl font-bold uppercase text-xs flex items-center gap-2 shadow-lg shadow-purple-600/20 active:scale-95 transition-all">{copiado ? <Check size={16} /> : <Copy size={16} />} {copiado ? "Copiado!" : "E-mails"}</button>
-                    <button onClick={handleRefresh} title="Atualizar" className="bg-blue-900 p-2 rounded-xl active:scale-95 group"><RotateCcw size={20} className="group-hover:rotate-180 transition-transform text-blue-200" /></button>
+                    <button onClick={handleRefresh} title="Atualizar Agora" className="bg-blue-900 p-2 rounded-xl active:scale-95 group"><RotateCcw size={20} className="group-hover:rotate-180 transition-transform text-blue-200" /></button>
                     <button onClick={() => setModoTV(true)} className="bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-xl font-bold uppercase text-xs flex items-center gap-2 shadow-lg shadow-yellow-400/20 active:scale-95 transition-all"><MonitorPlay size={16} /> <span className="hidden sm:inline">Ver</span> Ranking</button>
                     <button onClick={() => window.open('/ranking', '_blank')} className="bg-blue-800 hover:bg-blue-700 text-blue-200 px-3 py-2 rounded-xl active:scale-95 transition-all"><ExternalLink size={16} /></button>
                 </div>

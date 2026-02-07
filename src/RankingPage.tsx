@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, getFirestore } from "firebase/firestore";
+import { collection, query, getDocs, getFirestore } from "firebase/firestore"; // Troquei onSnapshot por getDocs
 import { initializeApp } from "firebase/app";
-import { Trophy, Medal, Crown } from 'lucide-react';
+import { Trophy, Medal, Crown, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const firebaseConfig = {
@@ -19,18 +19,56 @@ const db = getFirestore(app);
 const RankingPage = () => {
   const [rankingCompleto, setRankingCompleto] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<string>("");
 
+  // === FUNÇÃO INTELIGENTE DE BUSCA (ECONOMIZA COTA) ===
+  const buscarDados = async (forcar = false) => {
+    setLoading(true);
+    const CACHE_KEY = "ranking_cache_v2"; // Nome da memória
+    const CACHE_TIME_KEY = "ranking_time_v2"; // Hora que salvou
+    const TEMPO_LIMITE = 1000 * 60 * 15; // 15 Minutos de economia
+
+    const agora = Date.now();
+    const salvo = localStorage.getItem(CACHE_KEY);
+    const tempoSalvo = localStorage.getItem(CACHE_TIME_KEY);
+
+    // 1. Tenta usar a memória do celular (Custo: ZERO)
+    if (!forcar && salvo && tempoSalvo && (agora - Number(tempoSalvo) < TEMPO_LIMITE)) {
+        console.log("Usando memória do celular (Economizando cota!)");
+        const data = JSON.parse(salvo);
+        calcularRankingManipulado(data);
+        setUltimaAtualizacao(new Date(Number(tempoSalvo)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        setLoading(false);
+        return;
+    }
+
+    // 2. Se não tiver memória ou for velho, vai no Google (Custo: 1 Leitura)
+    try {
+        console.log("Baixando do Firebase...");
+        const inscricoesRef = collection(db, "inscrição");
+        const q = query(inscricoesRef);
+        
+        // AQUI ESTÁ A ECONOMIA: getDocs lê apenas UMA vez, não fica ouvindo.
+        const snapshot = await getDocs(q); 
+        
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        
+        // Salva no celular para a próxima vez
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        localStorage.setItem(CACHE_TIME_KEY, String(agora));
+        
+        calcularRankingManipulado(data);
+        setUltimaAtualizacao(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    } catch (error) {
+        console.error("Erro ao buscar:", error);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  // Roda apenas 1 vez quando abre a página
   useEffect(() => {
-    const inscricoesRef = collection(db, "inscrição");
-    const q = query(inscricoesRef);
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-      calcularRankingManipulado(data);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    buscarDados();
   }, []);
 
   const padronizarNome = (nomeBruto: string) => {
@@ -46,7 +84,7 @@ const RankingPage = () => {
     return limpo.trim();
   };
 
-  // === NOVA LÓGICA: TRAVAR EM 33 E DEIXAR CAIR ===
+  // === LÓGICA: TRAVAR EM 33 E DEIXAR CAIR ===
   const calcularRankingManipulado = (data: any[]) => {
     const counts: Record<string, number> = {};
     data.forEach(p => { const nomeOficial = padronizarNome(p.team); counts[nomeOficial] = (counts[nomeOficial] || 0) + 1; });
@@ -54,7 +92,6 @@ const RankingPage = () => {
     let listaGeral: any[] = [];
     let invasoresCountReal = 0;
 
-    // Separa todo mundo
     Object.entries(counts).forEach(([name, count]) => {
       if (name === "INVASORES") {
         invasoresCountReal = count;
@@ -63,28 +100,20 @@ const RankingPage = () => {
       }
     });
 
-    // === A MÁGICA AQUI ===
-    // Se Invasores tiver menos que 33, força ser 33.
-    // Se tiver mais (ex: 40), mostra 40 (crescimento natural).
     const invasoresCountFake = Math.max(invasoresCountReal, 33);
-
-    // Adiciona Invasores na lista junto com os outros
     listaGeral.push({ name: "INVASORES", count: invasoresCountFake });
 
-    // Ordena todo mundo junto (quem tiver mais fica em cima)
     listaGeral.sort((a, b) => b.count - a.count);
 
-    // Adiciona as posições (1º, 2º, 3º...)
     const rankingFinal = listaGeral.map((item, index) => ({
         ...item,
         posicao: index + 1
     }));
     
-    // Mostra Top 10
     setRankingCompleto(rankingFinal.slice(0, 10));
   };
 
-  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white font-bold uppercase tracking-widest">Carregando Ranking...</div>;
+  if (loading && rankingCompleto.length === 0) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white font-bold uppercase tracking-widest">Carregando Ranking...</div>;
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center p-4 overflow-hidden font-sans">
@@ -100,6 +129,14 @@ const RankingPage = () => {
                 <h1 className="text-white font-black text-4xl md:text-7xl italic uppercase tracking-tighter leading-none drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                     TOP 10 <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">EQUIPES</span>
                 </h1>
+                
+                {/* Botão de Atualizar e Hora */}
+                <div className="flex items-center justify-center gap-3 mt-4">
+                    <p className="text-white/40 text-[10px] uppercase tracking-widest">Atualizado às: {ultimaAtualizacao}</p>
+                    <button onClick={() => buscarDados(true)} className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors group" title="Atualizar agora">
+                        <RefreshCw size={12} className="text-white group-active:rotate-180 transition-transform" />
+                    </button>
+                </div>
             </header>
 
             <div className="w-full flex-1 overflow-y-auto px-4 pb-20 space-y-4 scrollbar-hide">
