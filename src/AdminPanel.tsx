@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, getFirestore, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
-import { Trophy, Activity, ArrowLeft, Search, Users, X, RotateCcw, Trash2, MonitorPlay, Medal, Crown, ExternalLink, Edit, Save, XCircle, Lock, KeyRound, BarChart3, Copy, Check, Download } from 'lucide-react';
+import { Trophy, Activity, ArrowLeft, Search, Users, X, RotateCcw, Trash2, MonitorPlay, Medal, Crown, ExternalLink, Edit, Save, XCircle, Lock, BarChart3, Copy, Check, Download, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // === CONFIGURAÇÃO DO FIREBASE ===
@@ -70,15 +70,18 @@ const AdminPanel = () => {
     return () => unsubscribe();
   }, [refreshKey, isAuthenticated]);
 
-  // === PADRONIZADOR DE NOMES ===
+  // === PADRONIZADOR DE NOMES (REMOVE ACENTOS) ===
   const padronizarNome = (nomeBruto: string) => {
     if (!nomeBruto) return "SEM EQUIPE";
     const limpo = nomeBruto.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9 ]/g, " ");
+    
+    // Correções automáticas de nomes de equipe
     if (limpo.includes("FORCA") && limpo.includes("HONRA")) return "FORÇA E HONRA";
     if (limpo.includes("INVASOR")) return "INVASORES";
     if (limpo.includes("CORRE") && (limpo.includes("CAMARA") || limpo.includes("GIBE"))) return "CORRE CAMARAGIBE";
     if (limpo.includes("PANGUA")) return "PANGUAS";
     if (limpo.includes("QUEM") && limpo.includes("AMA")) return "QUEM AMA CORRE";
+    
     return limpo.trim();
   };
 
@@ -106,21 +109,19 @@ const AdminPanel = () => {
 
   // === EXPORTAR PARA EXCEL (CSV) ===
   const handleExportExcel = () => {
-    // Cabeçalho da planilha
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Numero,Nome,Equipe,Nivel,Email,Data\n"; // Colunas
+    csvContent += "Numero,Nome,Equipe,Nivel,Saude,Email\n"; 
 
-    // Adiciona cada pessoa
     inscritos.forEach((p) => {
-        const linha = `${p.numero_inscricao},"${p.name}","${p.team}",${p.level},${p.email},${p.data_inscricao || ''}`;
+        const saude = p.health_details && p.health_details !== "N/A" ? p.health_details : "OK";
+        const linha = `${p.numero_inscricao},"${p.name}","${p.team}",${p.level},"${saude}",${p.email}`;
         csvContent += linha + "\n";
     });
 
-    // Cria o link de download invisível e clica nele
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "lista_inscritos_invasores.csv");
+    link.setAttribute("download", "lista_invasores_simples.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -163,21 +164,21 @@ const AdminPanel = () => {
     avancado: inscritos.filter(i => i.level === 'Avançado').length
   };
 
+  // === FILTRO INTELIGENTE (CORRIGIDO PARA O BUG DO INTERMEDIARIO) ===
   const inscritosFiltrados = inscritos.filter((item) => {
     if (!busca) return true;
-    const termo = padronizarNome(busca);
+    
+    // Padroniza tudo (remove acentos) para a busca bater certo
+    const termo = padronizarNome(busca); 
     const equipe = padronizarNome(item.team);
     const nome = (item.name || "").toUpperCase();
-    const nivel = (item.level || "").toUpperCase();
+    const nivel = padronizarNome(item.level || ""); // AQUI O SEGREDO: Remove acento do nível também
+
     return equipe.includes(termo) || nome.includes(termo.replace(" ", "")) || nivel.includes(termo);
   });
 
   const filtrarPorNivel = (nivel: string) => {
-    if (busca === nivel.toUpperCase()) {
-        setBusca("");
-    } else {
-        setBusca(nivel.toUpperCase());
-    }
+    if (busca === nivel.toUpperCase()) { setBusca(""); } else { setBusca(nivel.toUpperCase()); }
   };
 
   if (!isAuthenticated) {
@@ -245,15 +246,8 @@ const AdminPanel = () => {
                     <p className="text-blue-300 text-[10px] font-bold uppercase tracking-widest">Gestão de Equipes</p>
                 </div>
                 <div className="flex flex-wrap gap-2 w-full md:w-auto justify-start">
-                    {/* BOTÃO EXCEL (NOVO) */}
-                    <button onClick={handleExportExcel} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl font-bold uppercase text-xs flex items-center gap-2 shadow-lg shadow-green-600/20 active:scale-95 transition-all">
-                        <Download size={16} /> Planilha
-                    </button>
-
-                    <button onClick={handleCopyEmails} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl font-bold uppercase text-xs flex items-center gap-2 shadow-lg shadow-purple-600/20 active:scale-95 transition-all">
-                        {copiado ? <Check size={16} /> : <Copy size={16} />} {copiado ? "Copiado!" : "E-mails"}
-                    </button>
-                    
+                    <button onClick={handleExportExcel} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl font-bold uppercase text-xs flex items-center gap-2 shadow-lg shadow-green-600/20 active:scale-95 transition-all"><Download size={16} /> Planilha</button>
+                    <button onClick={handleCopyEmails} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl font-bold uppercase text-xs flex items-center gap-2 shadow-lg shadow-purple-600/20 active:scale-95 transition-all">{copiado ? <Check size={16} /> : <Copy size={16} />} {copiado ? "Copiado!" : "E-mails"}</button>
                     <button onClick={handleRefresh} title="Atualizar" className="bg-blue-900 p-2 rounded-xl active:scale-95 group"><RotateCcw size={20} className="group-hover:rotate-180 transition-transform text-blue-200" /></button>
                     <button onClick={() => setModoTV(true)} className="bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-xl font-bold uppercase text-xs flex items-center gap-2 shadow-lg shadow-yellow-400/20 active:scale-95 transition-all"><MonitorPlay size={16} /> <span className="hidden sm:inline">Ver</span> Ranking</button>
                     <button onClick={() => window.open('/ranking', '_blank')} className="bg-blue-800 hover:bg-blue-700 text-blue-200 px-3 py-2 rounded-xl active:scale-95 transition-all"><ExternalLink size={16} /></button>
@@ -270,7 +264,7 @@ const AdminPanel = () => {
                     <span className="text-3xl font-black text-green-100 leading-none">{stats.iniciante}</span>
                 </div>
                 <div onClick={() => filtrarPorNivel('Intermediário')} className={`bg-orange-900/20 border border-orange-800/50 p-4 rounded-xl flex flex-col justify-center cursor-pointer hover:bg-orange-900/40 transition-colors ${busca === 'INTERMEDIÁRIO' ? 'ring-2 ring-orange-400' : ''}`}>
-                    <p className="text-orange-400 text-[9px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1"><BarChart3 size={10}/> Intermed.</p>
+                    <p className="text-orange-400 text-[9px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1"><BarChart3 size={10}/> Intermediário</p>
                     <span className="text-3xl font-black text-orange-100 leading-none">{stats.intermediario}</span>
                 </div>
                 <div onClick={() => filtrarPorNivel('Avançado')} className={`bg-red-900/20 border border-red-800/50 p-4 rounded-xl flex flex-col justify-center cursor-pointer hover:bg-red-900/40 transition-colors ${busca === 'AVANÇADO' ? 'ring-2 ring-red-400' : ''}`}>
@@ -282,7 +276,7 @@ const AdminPanel = () => {
 
         <div className="relative group">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400"><Search size={20} /></div>
-            <input type="text" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Pesquisar por nome, equipe ou nível..." className="w-full bg-blue-900/40 border border-blue-800 text-white font-bold placeholder:text-blue-500/50 text-base md:text-lg rounded-2xl pl-12 pr-12 py-3 md:py-4 outline-none focus:border-yellow-400 focus:bg-blue-900/60 transition-all uppercase"/>
+            <input type="text" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Pesquisar..." className="w-full bg-blue-900/40 border border-blue-800 text-white font-bold placeholder:text-blue-500/50 text-base md:text-lg rounded-2xl pl-12 pr-12 py-3 md:py-4 outline-none focus:border-yellow-400 focus:bg-blue-900/60 transition-all uppercase"/>
             {busca && <button onClick={() => setBusca("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-400 hover:text-white"><X size={16} /></button>}
         </div>
 
@@ -293,7 +287,12 @@ const AdminPanel = () => {
                         <div className="flex items-start gap-3 w-full">
                             <span className="bg-yellow-400 text-blue-900 text-[10px] font-black px-2 py-1 rounded italic shrink-0 mt-1">#{pessoa.numero_inscricao}</span>
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-black text-base md:text-lg uppercase leading-tight truncate">{pessoa.name}</h3>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-black text-base md:text-lg uppercase leading-tight truncate">{pessoa.name}</h3>
+                                    {pessoa.health_details && pessoa.health_details !== "N/A" && pessoa.health_details !== "" && (
+                                        <div className="text-red-500 animate-pulse" title={`Saúde: ${pessoa.health_details}`}><AlertTriangle size={18} /></div>
+                                    )}
+                                </div>
                                 {editandoId === pessoa.id ? (
                                     <div className="flex items-center gap-2 mt-2 animate-in fade-in slide-in-from-left-2">
                                         <input autoFocus type="text" value={novoTime} onChange={(e) => setNovoTime(e.target.value)} className="bg-blue-950 border border-yellow-400 text-yellow-400 text-xs font-bold uppercase rounded p-1 w-full outline-none"/>
