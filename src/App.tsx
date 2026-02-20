@@ -17,7 +17,7 @@ const Trilha3Reinos = () => {
   const [telaAtual, setTelaAtual] = useState<'formulario' | 'pix'>('formulario');
   
   // === DADOS DO MERCADO PAGO ===
-  const mpAccessToken = 'APP_USR-COLE_SEU_TOKEN_AQUI'; 
+  const mpAccessToken = 'APP_USR-3160159209203933-021923-32fa49b9baf1895da22c8725bb046484-690601631'; 
 
   const [qrCodePix, setQrCodePix] = useState(''); 
   const [qrCodeImg, setQrCodeImg] = useState(''); 
