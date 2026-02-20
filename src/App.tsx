@@ -84,25 +84,27 @@ const Trilha3Reinos = () => {
       );
       await Promise.all(promises);
       
-      const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${mpAccessToken}`,
-          'Content-Type': 'application/json',
-          'X-Idempotency-Key': Date.now().toString()
-        },
-        body: JSON.stringify({
-          transaction_amount: valorTotal,
-          description: `Trilha 3 Reinos - ${participants.length} Ingressos`,
-          payment_method_id: 'pix',
-          payer: {
-            email: mainEmail,
-            first_name: participants[0].name
-          }
-        })
-      });
+      // === VAI ESTAR POR VOLTA DA LINHA 73 ATÉ A 92 ===
+const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${mpAccessToken}`,
+    'Content-Type': 'application/json',
+    'X-Idempotency-Key': Date.now().toString()
+  },
+  body: JSON.stringify({
+    transaction_amount: valorTotal,
+    description: `Trilha 3 Reinos - ${participants.length} Ingressos`,
+    payment_method_id: 'pix',
+    payer: {
+      email: mainEmail,
+      first_name: participants[0].name
+    }
+  })
+});
 
-      const mpData = await mpResponse.json();
+const mpData = await mpResponse.json();
+      
 
       if (mpData.point_of_interaction?.transaction_data) {
         setQrCodePix(mpData.point_of_interaction.transaction_data.qr_code);
