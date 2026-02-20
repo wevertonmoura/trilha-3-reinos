@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, ChevronRight, Clock, Ticket, AlertTriangle, Mountain, Droplets, Coffee, Loader2, AlertCircle, ShieldCheck, Plus, Trash2, Waves, Info, VolumeX } from 'lucide-react';
+import { Calendar, MapPin, Trophy, ChevronRight, Clock, Ticket, AlertTriangle, Mountain, Droplets, Coffee, Loader2, AlertCircle, ShieldCheck, Plus, Trash2, Waves, Info, VolumeX, CheckCircle, Copy, MessageCircle, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 
 // === CONFIGURAÇÃO DO SUPABASE ===
-const supabaseUrl = 'https://SUA-URL-AQUI.supabase.co';
-const supabaseKey = 'SUA-CHAVE-ANON-AQUI';
+const supabaseUrl = 'https://moqhjiesavnivkancxpz.supabase.co';
+const supabaseKey = 'sb_publishable_X5iKQonjycmsEMfeePTsyg_OkKp5ts-';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const Trilha3Reinos = () => {
@@ -14,6 +14,18 @@ const Trilha3Reinos = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   
+  // === CONTROLE DE TELA ===
+  const [telaAtual, setTelaAtual] = useState<'formulario' | 'pix'>('formulario');
+  
+  // === DADOS DO MERCADO PAGO E CONTATO ===
+  // Cole o seu Access Token gigante do Mercado Pago aqui dentro das aspas:
+  const mpAccessToken = 'APP_USR-COLE_SEU_ACCESS_TOKEN_AQUI'; 
+  const numeroWhatsAppAdmin = '81988227739'; 
+
+  // === ESTADOS DO PIX GERADO ===
+  const [qrCodePix, setQrCodePix] = useState(''); // O texto copia e cola
+  const [qrCodeImg, setQrCodeImg] = useState(''); // A imagem do QR Code
+
   const [participants, setParticipants] = useState([
     { name: '', email: '', phone: '', emergency: '' }
   ]);
@@ -62,7 +74,9 @@ const Trilha3Reinos = () => {
     try {
       const mainEmergency = participants[0].emergency;
       const mainEmail = participants[0].email;
+      const valorTotal = participants.length * valorIngresso;
 
+      // 1. SALVAR NO SUPABASE PRIMEIRO
       const promises = participants.map(p => 
         supabase.from('inscricao_trilha').insert([{ 
           nome: p.name, 
@@ -73,15 +87,50 @@ const Trilha3Reinos = () => {
           data_evento: "2026-03-21" 
         }])
       );
-
       await Promise.all(promises);
-      alert("Inscrição confirmada! Direcionando para o PIX...");
-      // Próxima etapa: Redirecionar para Pagamento PIX
+      
+      // 2. GERAR O PIX NO MERCADO PAGO
+      const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${mpAccessToken}`,
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': Date.now().toString() // Evita cobrança duplicada se a pessoa clicar duas vezes
+        },
+        body: JSON.stringify({
+          transaction_amount: valorTotal,
+          description: `Trilha 3 Reinos - ${participants.length} Ingressos`,
+          payment_method_id: 'pix',
+          payer: {
+            email: mainEmail,
+            first_name: participants[0].name
+          }
+        })
+      });
+
+      const mpData = await mpResponse.json();
+
+      if (mpData.point_of_interaction?.transaction_data) {
+        // Se deu sucesso, pega os dados do PIX e muda de tela!
+        setQrCodePix(mpData.point_of_interaction.transaction_data.qr_code);
+        setQrCodeImg(mpData.point_of_interaction.transaction_data.qr_code_base64);
+        setTelaAtual('pix');
+      } else {
+        console.error("Erro MP:", mpData);
+        setErrorMsg("Erro ao gerar o PIX automático. Verifique se o Access Token está correto.");
+      }
+      
     } catch (err: any) {
-      setErrorMsg("Erro de conexão. Verifique suas chaves do Supabase.");
+      setErrorMsg("Erro de conexão com o servidor. Tente novamente.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para copiar o PIX Dinâmico
+  const copiarPix = () => {
+    navigator.clipboard.writeText(qrCodePix);
+    alert('Código PIX Copia e Cola copiado com sucesso!');
   };
 
   return (
@@ -107,9 +156,9 @@ const Trilha3Reinos = () => {
         </div>
       </section>
 
-      <main className="container mx-auto px-6 py-12 max-w-5xl"> {/* Alterado para max-w-5xl para acomodar as colunas */}
+      <main className="container mx-auto px-6 py-12 max-w-5xl">
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-20 lg:gap-12"> {/* O gap-20 afasta o formulário no mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-20 lg:gap-12">
           
           {/* LADO ESQUERDO: INFORMAÇÕES */}
           <div className="lg:col-span-2 space-y-16">
@@ -159,7 +208,6 @@ const Trilha3Reinos = () => {
               <h2 className="text-2xl font-black uppercase italic mb-6 text-emerald-500 tracking-tighter">INFORMAÇÕES IMPORTANTES</h2>
               
               <div className="grid md:grid-cols-2 gap-6">
-                {/* 1. Valor do Ingresso */}
                 <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5">
                   <Ticket className="text-emerald-500 shrink-0" size={32}/>
                   <div>
@@ -168,7 +216,6 @@ const Trilha3Reinos = () => {
                   </div>
                 </div>
 
-                {/* 2. Regra de Som */}
                 <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5">
                   <VolumeX className="text-emerald-500 shrink-0" size={32}/>
                   <div>
@@ -177,7 +224,6 @@ const Trilha3Reinos = () => {
                   </div>
                 </div>
 
-                {/* 3. Café Coletivo */}
                 <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5">
                   <Coffee className="text-emerald-500 shrink-0" size={32}/>
                   <div>
@@ -186,7 +232,6 @@ const Trilha3Reinos = () => {
                   </div>
                 </div>
 
-                {/* 4. Segurança */}
                 <div className="bg-red-500/5 p-6 rounded-2xl border border-red-500/10 flex gap-5">
                   <AlertTriangle className="text-red-500 shrink-0" size={32}/>
                   <div>
@@ -201,77 +246,129 @@ const Trilha3Reinos = () => {
             </section>
           </div>
 
-          {/* LADO DIREITO: FORMULÁRIO (DARK SUAVE + ESPAÇAMENTO NO MOBILE) */}
+          {/* LADO DIREITO: FORMULÁRIO OU PIX */}
           <div className="lg:col-span-1 mt-10 lg:mt-0">
             
-          <section id="inscricao" className="sticky top-8 bg-zinc-900/90 backdrop-blur-md border border-zinc-700/50 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
-              <div className="text-center mb-10">
-                <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white">INSCRIÇÃO</h2>
-                <p className="text-emerald-500 text-sm font-bold mt-2 tracking-widest">R$ 20,00 POR PESSOA</p>
-              </div>
+            <section id="inscricao" className="sticky top-8 bg-zinc-900/90 backdrop-blur-md border border-zinc-700/50 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
+              
+              {/* TELA DE FORMULÁRIO */}
+              {telaAtual === 'formulario' ? (
+                <>
+                  <div className="text-center mb-10">
+                    <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white">INSCRIÇÃO</h2>
+                    <p className="text-emerald-500 text-sm font-bold mt-2 tracking-widest">R$ 20,00 POR PESSOA</p>
+                  </div>
 
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {participants.map((participant, index) => (
-                  <div key={index} className="p-6 rounded-3xl bg-zinc-800/40 border border-zinc-700/50 relative shadow-inner">
-                    <div className="flex justify-between items-center mb-6">
-                      <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                        {index === 0 ? "Comprador Principal" : `Participante ${index + 1}`}
-                      </span>
-                      {index > 0 && (
-                        <button type="button" onClick={() => removeParticipant(index)} className="text-zinc-500 hover:text-red-500 transition-colors p-1">
-                          <Trash2 size={18} />
-                        </button>
-                      )}
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    {participants.map((participant, index) => (
+                      <div key={index} className="p-6 rounded-3xl bg-zinc-800/40 border border-zinc-700/50 relative shadow-inner">
+                        <div className="flex justify-between items-center mb-6">
+                          <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                            {index === 0 ? "Comprador Principal" : `Participante ${index + 1}`}
+                          </span>
+                          {index > 0 && (
+                            <button type="button" onClick={() => removeParticipant(index)} className="text-zinc-500 hover:text-red-500 transition-colors p-1">
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-5">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">Nome Completo</label>
+                            <input type="text" required value={participant.name} onChange={e => updateParticipant(index, 'name', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="Ex: João Silva" />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">WhatsApp</label>
+                            <input type="tel" required value={participant.phone} onChange={e => updateParticipant(index, 'phone', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="(81) 9...." />
+                          </div>
+
+                          {index === 0 && (
+                            <>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">E-mail para Confirmação</label>
+                                <input type="email" required value={participant.email} onChange={e => updateParticipant(index, 'email', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="seu@gmail.com" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">Contato de Emergência</label>
+                                <input type="text" required value={participant.emergency} onChange={e => updateParticipant(index, 'emergency', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="Nome + Telefone" />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    <button type="button" onClick={addParticipant} className="w-full py-4 border-2 border-dashed border-zinc-600 rounded-2xl text-zinc-400 font-bold hover:border-emerald-500 hover:text-emerald-500 hover:bg-emerald-500/5 transition-all flex items-center justify-center gap-2 uppercase text-[10px] tracking-widest">
+                      <Plus size={16} /> Comprar outro ingresso
+                    </button>
+
+                    <div className="flex items-start gap-3 pt-6 border-t border-zinc-700/50">
+                      <input type="checkbox" id="terms" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 h-5 w-5 accent-emerald-500 cursor-pointer rounded" />
+                      <label htmlFor="terms" className="text-[11px] text-zinc-400 font-bold leading-relaxed cursor-pointer select-none">
+                        Aceito o Termo de Responsabilidade: declaro estar em boas condições de saúde e seguirei as instruções dos guias Invasores.
+                      </label>
                     </div>
 
-                    {/* CORREÇÃO AQUI: Mudado para grid-cols-1 para não esmagar os campos no Desktop */}
-                    <div className="grid grid-cols-1 gap-5">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">Nome Completo</label>
-                        <input type="text" required value={participant.name} onChange={e => updateParticipant(index, 'name', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="Ex: João Silva" />
+                    {errorMsg && (
+                      <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-[10px] font-bold flex items-center gap-2">
+                        <AlertCircle size={14}/> {errorMsg}
                       </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">WhatsApp</label>
-                        <input type="tel" required value={participant.phone} onChange={e => updateParticipant(index, 'phone', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="(81) 9...." />
-                      </div>
+                    )}
 
-                      {index === 0 && (
-                        <>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">E-mail para Confirmação</label>
-                            <input type="email" required value={participant.email} onChange={e => updateParticipant(index, 'email', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="seu@gmail.com" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">Contato de Emergência</label>
-                            <input type="text" required value={participant.emergency} onChange={e => updateParticipant(index, 'emergency', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="Nome + Telefone" />
-                          </div>
-                        </>
-                      )}
+                    <button disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all uppercase tracking-widest flex items-center justify-center gap-3 text-sm mt-4">
+                      {loading ? <Loader2 className="animate-spin" /> : <>Finalizar compra (R$ {participants.length * valorIngresso},00) <ChevronRight size={20} /></>}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                
+                /* TELA DE PAGAMENTO PIX AUTOMÁTICO */
+                <div className="text-center space-y-8 animate-in fade-in zoom-in duration-500">
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-2">
+                      <QrCode className="text-emerald-500 w-10 h-10" />
+                    </div>
+                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">Escaneie o PIX</h2>
+                    <p className="text-zinc-400 text-sm">Abra o app do seu banco e pague agora.</p>
+                  </div>
+
+                  {/* IMAGEM DO QR CODE GERADO PELO MERCADO PAGO */}
+                  {qrCodeImg && (
+                    <div className="flex justify-center my-6">
+                      <div className="bg-white p-3 rounded-2xl shadow-lg border-4 border-emerald-500/30">
+                        <img 
+                          src={`data:image/jpeg;base64,${qrCodeImg}`} 
+                          alt="QR Code PIX Mercado Pago" 
+                          className="w-48 h-48 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-zinc-800/40 border border-emerald-500/30 rounded-3xl p-6 shadow-inner relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
+                    <p className="text-xs font-bold uppercase text-zinc-500 tracking-widest mb-2">Valor total a pagar</p>
+                    <p className="text-5xl font-black text-white tracking-tighter">
+                      R$ {participants.length * valorIngresso}<span className="text-2xl text-zinc-500">,00</span>
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold uppercase text-zinc-500 tracking-widest text-left ml-2">Ou use o PIX Copia e Cola</p>
+                    <div className="flex items-center gap-2 bg-zinc-950 p-2 pl-4 rounded-xl border border-zinc-700/50">
+                      <span className="text-xs font-mono text-zinc-300 truncate w-full text-left">{qrCodePix || "Gerando..."}</span>
+                      <button 
+                        onClick={copiarPix}
+                        className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-3 rounded-lg text-xs font-bold transition-all uppercase tracking-wider flex items-center gap-2 shrink-0"
+                      >
+                        <Copy size={14} /> Copiar
+                      </button>
                     </div>
                   </div>
-                ))}
-
-                <button type="button" onClick={addParticipant} className="w-full py-4 border-2 border-dashed border-zinc-600 rounded-2xl text-zinc-400 font-bold hover:border-emerald-500 hover:text-emerald-500 hover:bg-emerald-500/5 transition-all flex items-center justify-center gap-2 uppercase text-[10px] tracking-widest">
-                  <Plus size={16} /> Comprar outro ingresso
-                </button>
-
-                <div className="flex items-start gap-3 pt-6 border-t border-zinc-700/50">
-                  <input type="checkbox" id="terms" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 h-5 w-5 accent-emerald-500 cursor-pointer rounded" />
-                  <label htmlFor="terms" className="text-[11px] text-zinc-400 font-bold leading-relaxed cursor-pointer select-none">
-                    Aceito o Termo de Responsabilidade: declaro estar em boas condições de saúde e seguirei as instruções dos guias Invasores.
-                  </label>
                 </div>
-
-                {errorMsg && (
-                  <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-[10px] font-bold flex items-center gap-2">
-                    <AlertCircle size={14}/> {errorMsg}
-                  </div>
-                )}
-
-                <button disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all uppercase tracking-widest flex items-center justify-center gap-3 text-sm mt-4">
-                  {loading ? <Loader2 className="animate-spin" /> : <>Finalizar compra (R$ {participants.length * valorIngresso},00) <ChevronRight size={20} /></>}
-                </button>
-              </form>
+              )}
+              
             </section>
           </div>
         </div>
@@ -284,7 +381,7 @@ const Trilha3Reinos = () => {
   );
 };
 
-// Auxiliares
+// Auxiliares (Mesmos de antes)
 const InfoRow = ({ icon, title, text }: any) => (
   <div className="flex items-start gap-5">
     <div className="mt-1 text-emerald-500">{icon}</div>
