@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, ChevronRight, Clock, Ticket, AlertTriangle, Mountain, Droplets, Coffee, Loader2, AlertCircle, ShieldCheck, Plus, Trash2, Waves, Info, VolumeX, CheckCircle, Copy, MessageCircle, QrCode } from 'lucide-react';
+import { Calendar, MapPin, Trophy, ChevronRight, Clock, Ticket, AlertTriangle, Mountain, Droplets, Coffee, Loader2, AlertCircle, ShieldCheck, Plus, Trash2, Waves, Info, VolumeX, Copy, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 
@@ -14,17 +14,13 @@ const Trilha3Reinos = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   
-  // === CONTROLE DE TELA ===
   const [telaAtual, setTelaAtual] = useState<'formulario' | 'pix'>('formulario');
   
-  // === DADOS DO MERCADO PAGO E CONTATO ===
-  // Cole o seu Access Token gigante do Mercado Pago aqui dentro das aspas:
-  const mpAccessToken = 'APP_USR-COLE_SEU_ACCESS_TOKEN_AQUI'; 
-  const numeroWhatsAppAdmin = '81988227739'; 
+  // === DADOS DO MERCADO PAGO ===
+  const mpAccessToken = 'APP_USR-COLE_SEU_TOKEN_AQUI'; 
 
-  // === ESTADOS DO PIX GERADO ===
-  const [qrCodePix, setQrCodePix] = useState(''); // O texto copia e cola
-  const [qrCodeImg, setQrCodeImg] = useState(''); // A imagem do QR Code
+  const [qrCodePix, setQrCodePix] = useState(''); 
+  const [qrCodeImg, setQrCodeImg] = useState(''); 
 
   const [participants, setParticipants] = useState([
     { name: '', email: '', phone: '', emergency: '' }
@@ -76,7 +72,6 @@ const Trilha3Reinos = () => {
       const mainEmail = participants[0].email;
       const valorTotal = participants.length * valorIngresso;
 
-      // 1. SALVAR NO SUPABASE PRIMEIRO
       const promises = participants.map(p => 
         supabase.from('inscricao_trilha').insert([{ 
           nome: p.name, 
@@ -89,13 +84,12 @@ const Trilha3Reinos = () => {
       );
       await Promise.all(promises);
       
-      // 2. GERAR O PIX NO MERCADO PAGO
       const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${mpAccessToken}`,
           'Content-Type': 'application/json',
-          'X-Idempotency-Key': Date.now().toString() // Evita cobrança duplicada se a pessoa clicar duas vezes
+          'X-Idempotency-Key': Date.now().toString()
         },
         body: JSON.stringify({
           transaction_amount: valorTotal,
@@ -111,32 +105,28 @@ const Trilha3Reinos = () => {
       const mpData = await mpResponse.json();
 
       if (mpData.point_of_interaction?.transaction_data) {
-        // Se deu sucesso, pega os dados do PIX e muda de tela!
         setQrCodePix(mpData.point_of_interaction.transaction_data.qr_code);
         setQrCodeImg(mpData.point_of_interaction.transaction_data.qr_code_base64);
         setTelaAtual('pix');
       } else {
-        console.error("Erro MP:", mpData);
-        setErrorMsg("Erro ao gerar o PIX automático. Verifique se o Access Token está correto.");
+        setErrorMsg("Erro ao gerar o PIX. Verifique o Access Token.");
       }
       
-    } catch (err: any) {
-      setErrorMsg("Erro de conexão com o servidor. Tente novamente.");
+    } catch (err) {
+      setErrorMsg("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Função para copiar o PIX Dinâmico
   const copiarPix = () => {
     navigator.clipboard.writeText(qrCodePix);
-    alert('Código PIX Copia e Cola copiado com sucesso!');
+    alert('Código PIX copiado!');
   };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-emerald-500">
       
-      {/* HEADER HERO DISCRETO */}
       <section className="relative h-[50vh] md:h-[60vh] flex items-end overflow-hidden">
         <div className="absolute inset-0 z-0">
           <AnimatePresence mode="wait">
@@ -157,13 +147,9 @@ const Trilha3Reinos = () => {
       </section>
 
       <main className="container mx-auto px-6 py-12 max-w-5xl">
-        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-20 lg:gap-12">
           
-          {/* LADO ESQUERDO: INFORMAÇÕES */}
           <div className="lg:col-span-2 space-y-16">
-            
-            {/* Descrição Completa */}
             <section>
               <h2 className="text-2xl font-black uppercase italic mb-6 border-b border-zinc-900 pb-2 text-zinc-500">Descrição do evento</h2>
               <div className="space-y-6 text-zinc-400 text-lg leading-relaxed">
@@ -174,7 +160,6 @@ const Trilha3Reinos = () => {
               </div>
             </section>
 
-            {/* Logística Reestabelecida */}
             <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="col-span-full">
                 <h2 className="text-2xl font-black uppercase italic mb-6 border-b border-zinc-900 pb-2 text-zinc-500">Sobre o evento</h2>
@@ -189,24 +174,20 @@ const Trilha3Reinos = () => {
 
             <hr className="border-zinc-900" />
 
-            {/* Recomendações */}
             <section>
               <h2 className="text-2xl font-black uppercase italic mb-6 border-b border-zinc-900 pb-2 text-zinc-500">O QUE LEVAR? (RECOMENDAÇÕES)</h2>
-              <p className="text-zinc-500 text-sm mb-6">Para que sua experiência seja a melhor possível, recomendamos levar:</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <CheckItem icon={<Droplets />} text="Água (pelo menos 1,5 litro)" />
                 <CheckItem icon={<ShieldCheck />} text="Protetor solar e repelente" />
-                <CheckItem icon={<Waves />} text="Roupa de banho (já por baixo da roupa, se preferir) e toalha" />
-                <CheckItem icon={<Info />} text="Boné ou chapéu para se proteger do sol" />
-                <CheckItem icon={<Mountain />} text="Calçados confortáveis e seguros para caminhada (tênis ou bota de trilha)" />
-                <CheckItem icon={<Trash2 />} text="Sacola para recolher seu lixo e manter a natureza limpa" />
+                <CheckItem icon={<Waves />} text="Roupa de banho e toalha" />
+                <CheckItem icon={<Info />} text="Boné ou chapéu" />
+                <CheckItem icon={<Mountain />} text="Calçados confortáveis" />
+                <CheckItem icon={<Trash2 />} text="Sacola para seu lixo" />
               </div>
             </section>
 
-            {/* INFORMAÇÕES IMPORTANTES */}
             <section className="space-y-6">
               <h2 className="text-2xl font-black uppercase italic mb-6 text-emerald-500 tracking-tighter">INFORMAÇÕES IMPORTANTES</h2>
-              
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5">
                   <Ticket className="text-emerald-500 shrink-0" size={32}/>
@@ -220,15 +201,15 @@ const Trilha3Reinos = () => {
                   <VolumeX className="text-emerald-500 shrink-0" size={32}/>
                   <div>
                     <h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Som e Natureza</h4>
-                    <p className="text-sm text-zinc-400 leading-relaxed">Não é permitido o uso de caixas de som em volume alto. Nosso objetivo é curtir a tranquilidade e os sons da própria natureza.</p>
+                    <p className="text-sm text-zinc-400 leading-relaxed">Não é permitido o uso de caixas de som em volume alto. Nosso objetivo é curtir a tranquilidade.</p>
                   </div>
                 </div>
 
                 <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5">
                   <Coffee className="text-emerald-500 shrink-0" size={32}/>
                   <div>
-                    <h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Café da Manhã Coletivo</h4>
-                    <p className="text-sm text-zinc-400 leading-relaxed">Faremos nossa confraternização ao final! Pedimos que cada participante leve um item (comida ou bebida) para compartilhar.</p>
+                    <h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Café Coletivo</h4>
+                    <p className="text-sm text-zinc-400 leading-relaxed">Pedimos que cada participante leve um item para compartilhar.</p>
                   </div>
                 </div>
 
@@ -236,22 +217,15 @@ const Trilha3Reinos = () => {
                   <AlertTriangle className="text-red-500 shrink-0" size={32}/>
                   <div>
                     <h4 className="font-bold text-red-500 uppercase text-sm mb-2 tracking-widest">Segurança Obrigatória</h4>
-                    <ul className="text-sm text-zinc-400 leading-relaxed space-y-2 list-disc ml-4">
-                      <li>Siga sempre as instruções dos organizadores Invasores.</li>
-                      <li>O banho só é permitido com autorização expressa dos guias.</li>
-                    </ul>
+                    <p className="text-sm text-zinc-400 leading-relaxed">Siga sempre as instruções dos organizadores Invasores.</p>
                   </div>
                 </div>
               </div>
             </section>
           </div>
 
-          {/* LADO DIREITO: FORMULÁRIO OU PIX */}
           <div className="lg:col-span-1 mt-10 lg:mt-0">
-            
             <section id="inscricao" className="sticky top-8 bg-zinc-900/90 backdrop-blur-md border border-zinc-700/50 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
-              
-              {/* TELA DE FORMULÁRIO */}
               {telaAtual === 'formulario' ? (
                 <>
                   <div className="text-center mb-10">
@@ -282,7 +256,6 @@ const Trilha3Reinos = () => {
                             <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">WhatsApp</label>
                             <input type="tel" required value={participant.phone} onChange={e => updateParticipant(index, 'phone', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="(81) 9...." />
                           </div>
-
                           {index === 0 && (
                             <>
                               <div className="space-y-1">
@@ -306,7 +279,7 @@ const Trilha3Reinos = () => {
                     <div className="flex items-start gap-3 pt-6 border-t border-zinc-700/50">
                       <input type="checkbox" id="terms" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 h-5 w-5 accent-emerald-500 cursor-pointer rounded" />
                       <label htmlFor="terms" className="text-[11px] text-zinc-400 font-bold leading-relaxed cursor-pointer select-none">
-                        Aceito o Termo de Responsabilidade: declaro estar em boas condições de saúde e seguirei as instruções dos guias Invasores.
+                        Aceito o Termo de Responsabilidade: declaro estar em boas condições de saúde.
                       </label>
                     </div>
 
@@ -322,53 +295,38 @@ const Trilha3Reinos = () => {
                   </form>
                 </>
               ) : (
-                
-                /* TELA DE PAGAMENTO PIX AUTOMÁTICO */
                 <div className="text-center space-y-8 animate-in fade-in zoom-in duration-500">
                   <div className="flex flex-col items-center justify-center space-y-3">
                     <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-2">
                       <QrCode className="text-emerald-500 w-10 h-10" />
                     </div>
                     <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">Escaneie o PIX</h2>
-                    <p className="text-zinc-400 text-sm">Abra o app do seu banco e pague agora.</p>
                   </div>
 
-                  {/* IMAGEM DO QR CODE GERADO PELO MERCADO PAGO */}
                   {qrCodeImg && (
                     <div className="flex justify-center my-6">
-                      <div className="bg-white p-3 rounded-2xl shadow-lg border-4 border-emerald-500/30">
-                        <img 
-                          src={`data:image/jpeg;base64,${qrCodeImg}`} 
-                          alt="QR Code PIX Mercado Pago" 
-                          className="w-48 h-48 rounded-lg"
-                        />
+                      <div className="bg-white p-3 rounded-2xl border-4 border-emerald-500/30">
+                        <img src={`data:image/jpeg;base64,${qrCodeImg}`} alt="PIX" className="w-48 h-48 rounded-lg" />
                       </div>
                     </div>
                   )}
 
                   <div className="bg-zinc-800/40 border border-emerald-500/30 rounded-3xl p-6 shadow-inner relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
-                    <p className="text-xs font-bold uppercase text-zinc-500 tracking-widest mb-2">Valor total a pagar</p>
-                    <p className="text-5xl font-black text-white tracking-tighter">
-                      R$ {participants.length * valorIngresso}<span className="text-2xl text-zinc-500">,00</span>
-                    </p>
+                    <p className="text-xs font-bold uppercase text-zinc-500 tracking-widest mb-2">Valor total</p>
+                    <p className="text-5xl font-black text-white tracking-tighter">R$ {participants.length * valorIngresso},00</p>
                   </div>
 
                   <div className="space-y-3">
-                    <p className="text-xs font-bold uppercase text-zinc-500 tracking-widest text-left ml-2">Ou use o PIX Copia e Cola</p>
                     <div className="flex items-center gap-2 bg-zinc-950 p-2 pl-4 rounded-xl border border-zinc-700/50">
-                      <span className="text-xs font-mono text-zinc-300 truncate w-full text-left">{qrCodePix || "Gerando..."}</span>
-                      <button 
-                        onClick={copiarPix}
-                        className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-3 rounded-lg text-xs font-bold transition-all uppercase tracking-wider flex items-center gap-2 shrink-0"
-                      >
+                      <span className="text-xs font-mono text-zinc-300 truncate w-full text-left">{qrCodePix}</span>
+                      <button onClick={copiarPix} className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-3 rounded-lg text-xs font-bold flex items-center gap-2 shrink-0">
                         <Copy size={14} /> Copiar
                       </button>
                     </div>
                   </div>
                 </div>
               )}
-              
             </section>
           </div>
         </div>
@@ -381,7 +339,6 @@ const Trilha3Reinos = () => {
   );
 };
 
-// Auxiliares (Mesmos de antes)
 const InfoRow = ({ icon, title, text }: any) => (
   <div className="flex items-start gap-5">
     <div className="mt-1 text-emerald-500">{icon}</div>
