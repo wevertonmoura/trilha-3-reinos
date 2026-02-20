@@ -27,7 +27,7 @@ const Trilha3Reinos = () => {
   ]);
 
   const images = ["/foto1.jpg", "/foto2.jpg", "/foto3.jpg", "/foto4.jpg"];
-  const valorIngresso = 20; 
+  const valorIngresso = 1; 
   const mapsUrl = "https://maps.app.goo.gl/m43fPvDdkKRoNGjs8";
 
   useEffect(() => {
