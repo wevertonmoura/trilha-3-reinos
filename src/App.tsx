@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Trophy, ChevronRight, Clock, Ticket, AlertTriangle, Mountain, Droplets, Coffee, Loader2, AlertCircle, ShieldCheck, Plus, Trash2, Waves, Info, VolumeX, Copy, QrCode } from 'lucide-react';
+import { Calendar, MapPin, Trophy, ChevronRight, Clock, Ticket, AlertTriangle, Mountain, Droplets, Coffee, Loader2, AlertCircle, ShieldCheck, Plus, Trash2, Waves, Info, VolumeX, Copy, QrCode, CheckCircle, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 
@@ -16,8 +16,13 @@ const Trilha3Reinos = () => {
   
   const [telaAtual, setTelaAtual] = useState<'formulario' | 'pix'>('formulario');
   
-  // === DADOS DO MERCADO PAGO ===
+  // === NOVOS ESTADOS PARA O VIGIA ===
+  const [statusPagamento, setStatusPagamento] = useState<'pendente' | 'pago'>('pendente');
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+
+  // === DADOS DO MERCADO PAGO E GRUPO ===
   const mpAccessToken = 'APP_USR-3160159209203933-021923-32fa49b9baf1895da22c8725bb046484-690601631'; 
+  const linkGrupoWhats = "https://chat.whatsapp.com/SEU_LINK_DO_GRUPO_AQUI"; // <-- COLE O LINK AQUI
 
   const [qrCodePix, setQrCodePix] = useState(''); 
   const [qrCodeImg, setQrCodeImg] = useState(''); 
@@ -36,6 +41,27 @@ const Trilha3Reinos = () => {
     }, 4000);
     return () => clearInterval(timer);
   }, [images.length]);
+
+  // === LOGICA DO VIGIA (POLLING) ===
+  useEffect(() => {
+    let intervalo: any;    if (paymentId && statusPagamento === 'pendente' && telaAtual === 'pix') {
+      intervalo = setInterval(async () => {
+        try {
+          const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+            headers: { 'Authorization': `Bearer ${mpAccessToken}` }
+          });
+          const data = await res.json();
+          if (data.status === 'approved') {
+            setStatusPagamento('pago');
+            clearInterval(intervalo);
+          }
+        } catch (err) {
+          console.error("Erro ao checar status:", err);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(intervalo);
+  }, [paymentId, statusPagamento, telaAtual, mpAccessToken]);
 
   const addParticipant = () => {
     setParticipants([...participants, { name: '', email: '', phone: '', emergency: '' }]);
@@ -84,34 +110,25 @@ const Trilha3Reinos = () => {
       );
       await Promise.all(promises);
       
-      // === VAI ESTAR POR VOLTA DA LINHA 73 ATÉ A 92 ===
-const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${mpAccessToken}`,
-    'Content-Type': 'application/json',
-    'X-Idempotency-Key': Date.now().toString()
-  },
-  body: JSON.stringify({
-    transaction_amount: valorTotal,
-    description: `Trilha 3 Reinos - ${participants.length} Ingressos`,
-    payment_method_id: 'pix',
-    payer: {
-      email: mainEmail,
-      first_name: participants[0].name
-    }
-  })
-});
+      const response = await fetch('/api/gerar-pix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          valor: valorTotal,
+          email: mainEmail,
+          nome: participants[0].name
+        })
+      });
 
-const mpData = await mpResponse.json();
-      
+      const mpData = await response.json();
 
       if (mpData.point_of_interaction?.transaction_data) {
         setQrCodePix(mpData.point_of_interaction.transaction_data.qr_code);
         setQrCodeImg(mpData.point_of_interaction.transaction_data.qr_code_base64);
+        setPaymentId(mpData.id); // <-- GUARDA O ID PARA O VIGIA
         setTelaAtual('pix');
       } else {
-        setErrorMsg("Erro ao gerar o PIX. Verifique o Access Token.");
+        setErrorMsg("Erro ao gerar o PIX. Verifique a configuração.");
       }
       
     } catch (err) {
@@ -228,6 +245,8 @@ const mpData = await mpResponse.json();
 
           <div className="lg:col-span-1 mt-10 lg:mt-0">
             <section id="inscricao" className="sticky top-8 bg-zinc-900/90 backdrop-blur-md border border-zinc-700/50 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
+              
+              {/* === MÁGICA DA TROCA DE TELA === */}
               {telaAtual === 'formulario' ? (
                 <>
                   <div className="text-center mb-10">
@@ -298,35 +317,56 @@ const mpData = await mpResponse.json();
                 </>
               ) : (
                 <div className="text-center space-y-8 animate-in fade-in zoom-in duration-500">
-                  <div className="flex flex-col items-center justify-center space-y-3">
-                    <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-2">
-                      <QrCode className="text-emerald-500 w-10 h-10" />
-                    </div>
-                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">Escaneie o PIX</h2>
-                  </div>
-
-                  {qrCodeImg && (
-                    <div className="flex justify-center my-6">
-                      <div className="bg-white p-3 rounded-2xl border-4 border-emerald-500/30">
-                        <img src={`data:image/jpeg;base64,${qrCodeImg}`} alt="PIX" className="w-48 h-48 rounded-lg" />
+                  
+                  {/* TELA DE SUCESSO CONDICIONAL */}
+                  {statusPagamento === 'pago' ? (
+                    <div className="py-10 space-y-6">
+                      <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(16,185,129,0.4)]">
+                        <CheckCircle size={40} className="text-white" />
                       </div>
+                      <h2 className="text-2xl font-black uppercase italic">Vaga Garantida!</h2>
+                      <p className="text-zinc-400 text-sm">Seu pagamento foi aprovado. Clique abaixo para entrar no grupo oficial:</p>
+                      <a href={linkGrupoWhats} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 w-full bg-[#25D366] p-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transform hover:scale-105 transition-all">
+                        <MessageCircle size={20} /> Entrar no Grupo
+                      </a>
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-2">
+                          <QrCode className="text-emerald-500 w-10 h-10" />
+                        </div>
+                        <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">Escaneie o PIX</h2>
+                      </div>
+
+                      {qrCodeImg && (
+                        <div className="flex justify-center my-6">
+                          <div className="bg-white p-3 rounded-2xl border-4 border-emerald-500/30">
+                            <img src={`data:image/jpeg;base64,${qrCodeImg}`} alt="PIX" className="w-48 h-48 rounded-lg" />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="bg-zinc-800/40 border border-emerald-500/30 rounded-3xl p-6 shadow-inner relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
+                        <p className="text-xs font-bold uppercase text-zinc-500 tracking-widest mb-2">Valor total</p>
+                        <p className="text-5xl font-black text-white tracking-tighter">R$ {participants.length * valorIngresso},00</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 bg-zinc-950 p-2 pl-4 rounded-xl border border-zinc-700/50">
+                          <span className="text-xs font-mono text-zinc-300 truncate w-full text-left">{qrCodePix}</span>
+                          <button onClick={copiarPix} className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-3 rounded-lg text-xs font-bold flex items-center gap-2 shrink-0">
+                            <Copy size={14} /> Copiar
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-[9px] text-zinc-500 uppercase font-bold animate-pulse">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                          Aguardando pagamento...
+                        </div>
+                      </div>
+                    </>
                   )}
-
-                  <div className="bg-zinc-800/40 border border-emerald-500/30 rounded-3xl p-6 shadow-inner relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
-                    <p className="text-xs font-bold uppercase text-zinc-500 tracking-widest mb-2">Valor total</p>
-                    <p className="text-5xl font-black text-white tracking-tighter">R$ {participants.length * valorIngresso},00</p>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 bg-zinc-950 p-2 pl-4 rounded-xl border border-zinc-700/50">
-                      <span className="text-xs font-mono text-zinc-300 truncate w-full text-left">{qrCodePix}</span>
-                      <button onClick={copiarPix} className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-3 rounded-lg text-xs font-bold flex items-center gap-2 shrink-0">
-                        <Copy size={14} /> Copiar
-                      </button>
-                    </div>
-                  </div>
                 </div>
               )}
             </section>
@@ -341,6 +381,7 @@ const mpData = await mpResponse.json();
   );
 };
 
+// COMPONENTES AUXILIARES
 const InfoRow = ({ icon, title, text }: any) => (
   <div className="flex items-start gap-5">
     <div className="mt-1 text-emerald-500">{icon}</div>
