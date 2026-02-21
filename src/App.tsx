@@ -22,7 +22,7 @@ const Trilha3Reinos = () => {
 
   // === DADOS DO MERCADO PAGO E GRUPO ===
   const mpAccessToken = 'APP_USR-3160159209203933-021923-32fa49b9baf1895da22c8725bb046484-690601631'; 
-  const linkGrupoWhats = "https://chat.whatsapp.com/SEU_LINK_DO_GRUPO_AQUI"; // <-- COLE O LINK AQUI
+  const linkGrupoWhats = "https://chat.whatsapp.com/JiSGu7PT6S3Ds3h6ZObqdd"; // <-- COLE O LINK AQUI
 
   const [qrCodePix, setQrCodePix] = useState(''); 
   const [qrCodeImg, setQrCodeImg] = useState(''); 
