@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { UserCheck, DollarSign, Users, ArrowLeft, Loader2, Search, ShieldAlert, Check, Download } from 'lucide-react';
 
 const Admin = ({ supabase, formatarMoeda, fecharAdmin }: any) => {
