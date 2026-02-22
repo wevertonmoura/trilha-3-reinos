@@ -57,7 +57,8 @@ const Trilha3Reinos = () => {
 
   const handleLoginAdmin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (senhaAdmin === "Invasores2026@REC") { 
+    // A senha agora vem do cofre seguro do Vercel, ninguém consegue ver no código!
+    if (senhaAdmin === import.meta.env.VITE_SENHA_ADMIN) { 
       setTelaAtual('admin');
       setErroLoginAdmin('');
     } else {
@@ -149,8 +150,12 @@ const Trilha3Reinos = () => {
     document.getElementById('inscricao')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // TRAVA DO DUPLO CLIQUE: Se já estiver carregando, para a função aqui mesmo!
+    if (loading) return;
+
     for (let i = 0; i < participants.length; i++) {
       const p = participants[i];
       if (p.name.trim().length < 3) { setErrorMsg(`Preencha o nome do Participante ${i + 1}.`); return; }
@@ -256,10 +261,10 @@ const Trilha3Reinos = () => {
   }
 
   // === RENDERIZAÇÃO: PAINEL ADMIN ===
+   // === RENDERIZAÇÃO: PAINEL ADMIN ===
   if (telaAtual === 'admin') {
-    return <Admin supabase={supabase} formatarMoeda={formatarMoeda} fecharAdmin={() => setTelaAtual('formulario')} />;
+    return <Admin senha={senhaAdmin} formatarMoeda={formatarMoeda} fecharAdmin={() => setTelaAtual('formulario')} />;
   }
-
   // === RENDERIZAÇÃO: SITE PRINCIPAL ===
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-emerald-500 overflow-x-hidden">
