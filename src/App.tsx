@@ -27,8 +27,8 @@ const Trilha3Reinos = () => {
   const linkGrupoGeral = "https://chat.whatsapp.com/BEjOT8bcJkZB8D8Krzxr3R"; // Grupo Geral (Rodapé)
   const linkInstagram = "https://www.instagram.com/invasores_081?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="; 
   
-  const valorIngresso = 20; 
-  const taxaPix = 0.20; 
+  const valorIngresso = 1; 
+  const taxaPix = 0.0; 
 
   const formatarMoeda = (valor: number) => {
     return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -305,7 +305,7 @@ const Trilha3Reinos = () => {
                 </div>
                 <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5">
                   <QrCode className="text-emerald-500 shrink-0" size={32}/>
-                  <div><h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Pagamento via PIX</h4><p className="text-sm text-zinc-400 leading-relaxed">Confirmação automática via PIX. Acréscimo de taxa de <strong className="text-emerald-500">R$ 0,20</strong>.</p></div>
+                  <div><h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Pagamento via PIX</h4><p className="text-sm text-zinc-400 leading-relaxed">Confirmação automática via PIX. Acréscimo de taxa de <strong className="text-emerald-500">R$ 0,50</strong>.</p></div>
                 </div>
                 <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5">
                   <Coffee className="text-emerald-500 shrink-0" size={32}/>
