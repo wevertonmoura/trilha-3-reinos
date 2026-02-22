@@ -22,7 +22,6 @@ const Trilha3Reinos = () => {
   const [paymentId, setPaymentId] = useState<string | null>(null);
 
   // === LINKS E VALORES ===
-  const mpAccessToken = 'APP_USR-3160159209203933-021923-32fa49b9baf1895da22c8725bb046484-690601631'; 
   const linkGrupoWhats = "https://chat.whatsapp.com/JiSGu7PT6S3Ds3h6ZObqdd"; // Grupo VIP (Pós-pagamento)
   const linkGrupoGeral = "https://chat.whatsapp.com/BEjOT8bcJkZB8D8Krzxr3R"; // Grupo Geral (Rodapé)
   const linkInstagram = "https://www.instagram.com/invasores_081?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="; 
@@ -59,10 +58,10 @@ const Trilha3Reinos = () => {
     if (paymentId && statusPagamento === 'pendente' && telaAtual === 'pix') {
       intervalo = setInterval(async () => {
         try {
-          const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-            headers: { 'Authorization': `Bearer ${mpAccessToken}` }
-          });
+          // Agora o React chama a nossa API segura em vez do Mercado Pago direto
+          const res = await fetch(`/api/checar-pagamento?paymentId=${paymentId}`);
           const data = await res.json();
+          
           if (data.status === 'approved') {
             setStatusPagamento('pago');
             clearInterval(intervalo);
@@ -73,7 +72,7 @@ const Trilha3Reinos = () => {
       }, 3000);
     }
     return () => clearInterval(intervalo);
-  }, [paymentId, statusPagamento, telaAtual, mpAccessToken]);
+  }, [paymentId, statusPagamento, telaAtual]); // Retiramos o mpAccessToken daqui também
 
   // FUNÇÕES DE MANIPULAÇÃO DE PARTICIPANTES
   const addParticipant = () => setParticipants([...participants, { name: '', email: '', phone: '', emergency: '' }]);
