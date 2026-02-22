@@ -10,11 +10,15 @@ export default async function handler(req, res) {
   const firstName = nomePartes[0];
   const lastName = nomePartes.length > 1 ? nomePartes.slice(1).join(" ") : "Invasor";
 
+  // Identifica automaticamente o link do seu Vercel para o Webhook
+  const host = req.headers.host;
+  const protocolo = host.includes('localhost') ? 'http' : 'https';
+  const webhookUrl = `${protocolo}://${host}/api/webhook`;
+
   try {
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
-        // Usamos a variável de ambiente que você salvou no Vercel por segurança
         'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
         'Content-Type': 'application/json',
         'X-Idempotency-Key': `pix-${Date.now()}` 
@@ -29,9 +33,11 @@ export default async function handler(req, res) {
           last_name: lastName,
           identification: {
             type: 'CPF',
-            number: cpf // CPF enviado do formulário (apenas números)
+            number: cpf 
           }
         },
+        external_reference: email, // <-- A ETIQUETA: Usamos o e-mail para achar os ingressos depois
+        notification_url: webhookUrl, // <-- O TELEFONE FIXO: O MP vai chamar esse link quando pagarem!
         installments: 1
       })
     });
@@ -39,7 +45,6 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (data.id) {
-      // Se deu certo, devolvemos os dados do PIX pro seu site
       res.status(200).json(data);
     } else {
       console.error("Erro do Mercado Pago:", data);
