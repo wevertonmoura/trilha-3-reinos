@@ -37,14 +37,15 @@ export default async function handler(req, res) {
           }
         },
         external_reference: email, // <-- A ETIQUETA: Usamos o e-mail para achar os ingressos depois
-        notification_url: webhookUrl, // <-- O TELEFONE FIXO: O MP vai chamar esse link quando pagarem!
-        installments: 1
+        notification_url: webhookUrl // <-- O TELEFONE FIXO: O MP vai chamar esse link quando pagarem!
+        // REMOVIDO a linha de "installments: 1" que causava o Erro 400
       })
     });
 
     const data = await response.json();
 
-    if (data.id) {
+    // REMOVIDO a letra "a" perdida que estava aqui
+    if (data.id) { 
       res.status(200).json(data);
     } else {
       console.error("Erro do Mercado Pago:", data);
