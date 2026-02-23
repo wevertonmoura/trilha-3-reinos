@@ -57,7 +57,6 @@ const Trilha3Reinos = () => {
 
   const handleLoginAdmin = (e: React.FormEvent) => {
     e.preventDefault();
-    // A senha agora vem do cofre seguro do Vercel, ninguém consegue ver no código!
     if (senhaAdmin === import.meta.env.VITE_SENHA_ADMIN) { 
       setTelaAtual('admin');
       setErroLoginAdmin('');
@@ -100,11 +99,6 @@ const Trilha3Reinos = () => {
           const data = await res.json();
           
           if (data.status === 'approved') {
-            await supabase
-              .from('inscricao_trilha')
-              .update({ pago: true })
-              .eq('telefone', participants[0].phone); 
-
             setStatusPagamento('pago');
             clearInterval(intervalo);
           }
@@ -114,8 +108,9 @@ const Trilha3Reinos = () => {
       }, 3000);
     }
     return () => clearInterval(intervalo);
-  }, [paymentId, statusPagamento, telaAtual, participants]); 
+  }, [paymentId, statusPagamento, telaAtual]);
 
+  // === FUNÇÃO DA LIXEIRA CORRIGIDA AQUI ===
   const removeParticipant = (index: number) => {
     const newParticipants = [...participants];
     newParticipants.splice(index, 1);
@@ -150,10 +145,9 @@ const Trilha3Reinos = () => {
     document.getElementById('inscricao')?.scrollIntoView({ behavior: 'smooth' });
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // TRAVA DO DUPLO CLIQUE: Se já estiver carregando, para a função aqui mesmo!
     if (loading) return;
 
     for (let i = 0; i < participants.length; i++) {
@@ -176,7 +170,8 @@ const Trilha3Reinos = () => {
     try {
       const mainEmergency = participants[0].emergency;
       const mainEmail = participants[0].email;
-      const valorTotal = (participants.length * valorIngresso) + taxaPix; 
+      
+      const valorTotal = Number(((participants.length * valorIngresso) + taxaPix).toFixed(2)); 
 
       const promises = participants.map(p => 
         supabase.from('inscricao_trilha').insert([{ 
@@ -185,12 +180,18 @@ const Trilha3Reinos = () => {
           telefone: p.phone,
           cpf: p.cpf.replace(/\D/g, ''),
           contato_emergencia: mainEmergency,
-          evento: "Trilha Santuário Dos três reinos", 
-          data_evento: "2026-03-22",
           pago: false 
         }])
       );
-      await Promise.all(promises);
+      
+      const resultados = await Promise.all(promises);
+      
+      for (const res of resultados) {
+        if (res.error) {
+          console.error("Erro do Banco:", res.error);
+          throw new Error("Erro ao salvar. Verifique se as colunas estão corretas no banco.");
+        }
+      }
       
       const response = await fetch('/api/gerar-pix', {
         method: 'POST',
@@ -212,10 +213,12 @@ const Trilha3Reinos = () => {
         setTelaAtual('pix');
         setTempoRestante(900); 
       } else {
-        setErrorMsg("Erro ao gerar o PIX. Verifique a configuração.");
+        console.error("Erro do Mercado Pago:", mpData);
+        throw new Error("Erro ao gerar o PIX. Verifique a configuração.");
       }
-    } catch (err) {
-      setErrorMsg("Erro de conexão. Tente novamente.");
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || "Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -261,10 +264,10 @@ const Trilha3Reinos = () => {
   }
 
   // === RENDERIZAÇÃO: PAINEL ADMIN ===
-   // === RENDERIZAÇÃO: PAINEL ADMIN ===
   if (telaAtual === 'admin') {
     return <Admin senha={senhaAdmin} formatarMoeda={formatarMoeda} fecharAdmin={() => setTelaAtual('formulario')} />;
   }
+
   // === RENDERIZAÇÃO: SITE PRINCIPAL ===
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-emerald-500 overflow-x-hidden">
