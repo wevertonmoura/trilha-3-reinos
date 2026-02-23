@@ -10,10 +10,9 @@ export default async function handler(req, res) {
   const firstName = nomePartes[0];
   const lastName = nomePartes.length > 1 ? nomePartes.slice(1).join(" ") : "Invasor";
 
-  // Identifica automaticamente o link do seu Vercel para o Webhook
-  const host = req.headers.host;
-  const protocolo = host.includes('localhost') ? 'http' : 'https';
-  const webhookUrl = `${protocolo}://${host}/api/webhook`;
+  // CORREÇÃO: Força o Mercado Pago a ligar sempre para o site oficial (destrancado)
+  // ATENÇÃO: Confirme se o link do seu site oficial é exatamente este abaixo! Se for "trilha-3-reino" sem o "s" no final, ajuste ali.
+  const webhookUrl = 'https://trilha-3-reinos.vercel.app/api/webhook';
 
   try {
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
@@ -37,14 +36,12 @@ export default async function handler(req, res) {
           }
         },
         external_reference: email, // <-- A ETIQUETA: Usamos o e-mail para achar os ingressos depois
-        notification_url: webhookUrl // <-- O TELEFONE FIXO: O MP vai chamar esse link quando pagarem!
-        // REMOVIDO a linha de "installments: 1" que causava o Erro 400
+        notification_url: webhookUrl // <-- O TELEFONE FIXO: O MP vai chamar o link oficial destrancado!
       })
     });
 
     const data = await response.json();
 
-    // REMOVIDO a letra "a" perdida que estava aqui
     if (data.id) { 
       res.status(200).json(data);
     } else {
