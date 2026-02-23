@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   // CORREÇÃO: Força o Mercado Pago a ligar sempre para o site oficial (destrancado)
   // ATENÇÃO: Confirme se o link do seu site oficial é exatamente este abaixo! Se for "trilha-3-reino" sem o "s" no final, ajuste ali.
-  const webhookUrl = 'https://trilha-3-reinos.vercel.app/api/webhook';
+  const webhookUrl = 'https://trilha-3-reino.vercel.app/api/webhook';
 
   try {
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
