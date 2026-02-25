@@ -489,8 +489,8 @@ const Trilha3Reinos = () => {
                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
                                <div className="flex justify-between items-start relative z-10">
                                  <div>
-                                   <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Passaporte</p>
-                                   <h3 className="text-white text-2xl font-black italic tracking-tighter uppercase">Trilha 3 Reinos</h3>
+                                   <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.3em] mb-1">ingresso</p>
+                                   <h3 className="text-white text-2xl font-black italic tracking-tighter uppercase">Trilha três Reinos</h3>
                                  </div>
                                  <div className="bg-zinc-950/50 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
                                    <span className="text-white font-mono text-xs font-bold">#{String(index + 1).padStart(3, '0')}</span>
@@ -520,12 +520,7 @@ const Trilha3Reinos = () => {
                                     <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 flex items-center gap-1"><Clock size={10}/> Partida</p>
                                     <p className="text-zinc-200 font-bold text-sm">07:00 AM</p>
                                   </div>
-                                  <div className="col-span-2 border-t border-zinc-800/50 pt-3 mt-1">
-                                    <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 flex items-center gap-1">
-                                      <AlertTriangle size={10} className="text-red-500"/> Contato SOS
-                                    </p>
-                                    <p className="text-red-400 font-bold text-xs truncate">{p.emergency}</p>
-                                  </div>
+                                 
                                 </div>
                                 <div className="flex flex-col items-center justify-center pt-2">
                                    <div className="h-10 w-full max-w-[200px] flex gap-[3px] justify-center opacity-70">
@@ -533,7 +528,7 @@ const Trilha3Reinos = () => {
                                        <div key={i} className={`bg-white rounded-full ${i % 2 === 0 ? 'w-1' : (i % 3 === 0 ? 'w-[2px]' : 'w-0.5')} h-full`}></div>
                                      ))}
                                    </div>
-                                   <p className="text-zinc-600 font-mono text-[10px] tracking-[0.4em] mt-3">VAGA-GARANTIDA-081</p>
+                                   <p className="text-zinc-600 font-mono text-[10px] tracking-[0.4em] mt-3">VAGA-GARANTIDA</p>
                                 </div>
                               </div>
                             </div>
