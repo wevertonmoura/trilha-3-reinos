@@ -32,9 +32,9 @@ const Trilha3Reinos = () => {
   const linkGrupoWhats = "https://chat.whatsapp.com/JiSGu7PT6S3Ds3h6ZObqdd"; 
   const linkGrupoGeral = "https://chat.whatsapp.com/BEjOT8bcJkZB8D8Krzxr3R"; 
   const linkInstagram = "https://www.instagram.com/invasores_081"; 
-  const linkSuporte = "https://wa.me/5581999999999?text=Olá,%20preciso%20de%20ajuda%20com%20meu%20ingresso%20da%20Trilha%203%20Reinos."; // COLOQUE SEU NÚMERO AQUI
+  const linkSuporte = "https://wa.me/5581994350798?text=Olá,%20preciso%20de%20ajuda%20com%20meu%20ingresso%20da%20Trilha%203%20Reinos."; // COLOQUE SEU NÚMERO AQUI
   
-  const valorIngresso = 1; 
+  const valorIngresso = 20; 
   const taxaPix = 0.50; 
 
   const formatarMoeda = (valor: number) => {
