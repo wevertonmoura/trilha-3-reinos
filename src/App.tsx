@@ -30,7 +30,7 @@ const Trilha3Reinos = () => {
   const linkGrupoGeral = "https://chat.whatsapp.com/BEjOT8bcJkZB8D8Krzxr3R"; 
   const linkInstagram = "https://www.instagram.com/invasores_081"; 
   
-  const valorIngresso = 1; 
+  const valorIngresso = 20; 
   const taxaPix = 0.50; 
 
   const formatarMoeda = (valor: number) => {
@@ -46,6 +46,29 @@ const Trilha3Reinos = () => {
   ]);
 
   const images = ["/foto1.jpg", "/foto2.jpg", "/foto3.jpg", "/foto4.jpg"];
+
+  // === LÓGICA DE MEMÓRIA (TICKET SALVO) ===
+  useEffect(() => {
+    const ticketSalvo = localStorage.getItem('@trilha3reinos:ticket');
+    if (ticketSalvo) {
+      setParticipants(JSON.parse(ticketSalvo));
+      setTelaAtual('pix');
+      setStatusPagamento('pago');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (statusPagamento === 'pago' && participants[0].name !== '') {
+      localStorage.setItem('@trilha3reinos:ticket', JSON.stringify(participants));
+    }
+  }, [statusPagamento, participants]);
+
+  const comprarMaisIngressos = () => {
+    localStorage.removeItem('@trilha3reinos:ticket');
+    setParticipants([{ name: '', email: '', phone: '', emergency: '', cpf: '' }]);
+    setStatusPagamento('pendente');
+    setTelaAtual('formulario');
+  };
 
   // === LÓGICA DE ACESSO AO ADMIN ===
   useEffect(() => {
@@ -90,6 +113,7 @@ const Trilha3Reinos = () => {
     return `${m}:${s}`;
   };
 
+  // CHECAGEM DO PAGAMENTO
   useEffect(() => {
     let intervalo: any;
     if (paymentId && statusPagamento === 'pendente' && telaAtual === 'pix') {
@@ -110,7 +134,6 @@ const Trilha3Reinos = () => {
     return () => clearInterval(intervalo);
   }, [paymentId, statusPagamento, telaAtual]);
 
-  // === FUNÇÃO DA LIXEIRA CORRIGIDA AQUI ===
   const removeParticipant = (index: number) => {
     const newParticipants = [...participants];
     newParticipants.splice(index, 1);
@@ -162,7 +185,7 @@ const Trilha3Reinos = () => {
       }
     }
 
-    if (!termsAccepted) { setErrorMsg("Aceite o termo de responsabilidade."); return; }
+    if (!termsAccepted) { setErrorMsg("Aceite o termo de responsabilidade e regras de cancelamento."); return; }
 
     setLoading(true);
     setErrorMsg('');
@@ -413,7 +436,9 @@ const Trilha3Reinos = () => {
                     <button type="button" onClick={addParticipant} className="w-full py-4 border-2 border-dashed border-zinc-600 rounded-2xl text-zinc-400 font-bold hover:border-emerald-500 hover:text-emerald-500 transition-all flex items-center justify-center gap-2 uppercase text-[10px] tracking-widest"><Plus size={16} /> Comprar outro ingresso</button>
                     <div className="flex items-start gap-3 pt-6 border-t border-zinc-700/50">
                       <input type="checkbox" id="terms" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 h-5 w-5 accent-emerald-500 cursor-pointer rounded" />
-                      <label htmlFor="terms" className="text-[11px] text-zinc-400 font-bold leading-relaxed cursor-pointer select-none">Aceito o Termo de Responsabilidade: declaro estar em boas condições de saúde.</label>
+                      <label htmlFor="terms" className="text-[11px] text-zinc-400 font-bold leading-relaxed cursor-pointer select-none">
+                        Aceito o Termo de Responsabilidade (declaro estar em boas condições de saúde) e estou ciente de que cancelamentos com reembolso só podem ser solicitados até 48h antes do evento.
+                      </label>
                     </div>
                     {errorMsg && <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-[10px] font-bold flex items-center gap-2"><AlertCircle size={14}/> {errorMsg}</div>}
                     <button disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl transition-all uppercase tracking-widest flex items-center justify-center gap-3 text-sm mt-4">
@@ -424,18 +449,110 @@ const Trilha3Reinos = () => {
               ) : (
                 <div className="text-center space-y-8 animate-in fade-in zoom-in duration-500">
                   {statusPagamento === 'pago' ? (
-                    <div className="py-10 space-y-6">
-                      <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(16,185,129,0.4)]"><CheckCircle size={40} className="text-white" /></div>
-                      <h2 className="text-2xl font-black uppercase italic">Vaga Garantida!</h2>
-                      <p className="text-zinc-400 text-sm">Seu pagamento foi aprovado. Entre no grupo oficial da trilha:</p>
+                    <div className="py-2 space-y-6 animate-in fade-in zoom-in duration-500">
+                      <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(16,185,129,0.4)]">
+                        <CheckCircle size={32} className="text-white" />
+                      </div>
+                      <h2 className="text-2xl font-black uppercase italic text-white">Pagamento Confirmado!</h2>
+                      <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Tire um print dos seus tickets abaixo</p>
                       
-                      {/* BOTÃO DO WHATSAPP DA TELA DE SUCESSO - CORRIGIDO */}
-                      <a href={linkGrupoWhats} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 w-full bg-[#25D366] p-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transform hover:scale-105 transition-all text-white">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M11.996 0A11.96 11.96 0 0 0 0 11.996c0 2.115.548 4.14 1.59 5.955L.003 24l6.19-1.62A11.956 11.956 0 0 0 11.996 24C18.625 24 24 18.625 24 11.996 24 5.367 18.625 0 11.996 0zM7.202 5.86c.218-.01.442-.016.666-.016.27 0 .618.01.9.52.316.57 1.018 2.476 1.107 2.665.09.19.16.42-.03.65-.188.22-.26.33-.518.65-.258.31-.54.67-.77.905-.258.26-.528.53-.228 1.04.3.5 1.34 2.21 2.89 3.58 2.008 1.77 3.658 2.33 4.198 2.56.54.23.86.19 1.17-.13.31-.32 1.34-1.57 1.7-2.11.36-.54.72-.45 1.21-.26.5.19 3.16 1.49 3.7 1.76.54.26.9.39 1.03.6.13.22.13 1.26-.35 2.48-.48 1.22-2.82 2.38-3.9 2.45-1.07.07-2.22.4-6.35-1.22-4.9-1.92-8.08-6.9-8.33-7.23-.25-.33-1.98-2.65-1.98-5.06s1.22-3.6 1.66-4.06c.44-.45 1.05-.58 1.54-.58z"/>
-                        </svg>
-                        Entrar no Grupo Oficial
-                      </a>
+                      {/* === ÁREA DOS TICKETS PREMIUM === */}
+                      <div className="space-y-8 text-left w-full max-w-md mx-auto pb-4">
+                        {participants.map((p, index) => (
+                          <motion.div 
+                            initial={{ y: 20, opacity: 0 }} 
+                            animate={{ y: 0, opacity: 1 }} 
+                            transition={{ delay: index * 0.2 }}
+                            key={index} 
+                            className="relative bg-zinc-900 rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-zinc-800"
+                          >
+                            {/* Header do Ticket */}
+                            <div className="bg-gradient-to-br from-emerald-600 to-emerald-900 p-6 relative overflow-hidden">
+                               {/* Efeito de textura / brilho */}
+                               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
+                               
+                               <div className="flex justify-between items-start relative z-10">
+                                 <div>
+                                   <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Passaporte</p>
+                                   <h3 className="text-white text-2xl font-black italic tracking-tighter uppercase">Trilha 3 Reinos</h3>
+                                 </div>
+                                 <div className="bg-zinc-950/50 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
+                                   <span className="text-white font-mono text-xs font-bold">#{String(index + 1).padStart(3, '0')}</span>
+                                 </div>
+                               </div>
+                            </div>
+
+                            {/* Recorte do Ticket (Efeito Perfurado) */}
+                            <div className="relative h-8 bg-zinc-900 flex items-center">
+                              {/* Círculo Esquerdo */}
+                              <div className="absolute -left-4 w-8 h-8 bg-zinc-950 rounded-full border-r border-zinc-800"></div>
+                              {/* Linha Tracejada */}
+                              <div className="w-full border-t-2 border-dashed border-zinc-800/80 mx-6"></div>
+                              {/* Círculo Direito */}
+                              <div className="absolute -right-4 w-8 h-8 bg-zinc-950 rounded-full border-l border-zinc-800"></div>
+                            </div>
+
+                            {/* Corpo do Ticket */}
+                            <div className="p-6 pt-2 pb-8 bg-zinc-900 relative">
+                              {/* Marca d'água invisível ao fundo */}
+                              <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
+                                <Mountain size={140} />
+                              </div>
+
+                              <div className="space-y-6 relative z-10">
+                                {/* Nome do Participante */}
+                                <div>
+                                  <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-[0.2em] mb-1">Invasor Titular</p>
+                                  <p className="text-white font-black text-xl uppercase tracking-tight truncate">{p.name}</p>
+                                </div>
+
+                                {/* Grid de Informações */}
+                                <div className="grid grid-cols-2 gap-4 bg-zinc-950/50 p-4 rounded-2xl border border-zinc-800/50">
+                                  <div>
+                                    <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 flex items-center gap-1"><Calendar size={10}/> Data</p>
+                                    <p className="text-zinc-200 font-bold text-sm">22 Mar 2026</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 flex items-center gap-1"><Clock size={10}/> Partida</p>
+                                    <p className="text-zinc-200 font-bold text-sm">07:00 AM</p>
+                                  </div>
+                                  <div className="col-span-2 border-t border-zinc-800/50 pt-3 mt-1">
+                                    <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 flex items-center gap-1">
+                                      <AlertTriangle size={10} className="text-red-500"/> Contato SOS
+                                    </p>
+                                    <p className="text-red-400 font-bold text-xs truncate">{p.emergency}</p>
+                                  </div>
+                                </div>
+
+                                {/* Rodapé com Código de Barras Falso */}
+                                <div className="flex flex-col items-center justify-center pt-2">
+                                   <div className="h-10 w-full max-w-[200px] flex gap-[3px] justify-center opacity-70">
+                                     {/* Barrinhas aleatórias geradas por código */}
+                                     {[...Array(30)].map((_, i) => (
+                                       <div key={i} className={`bg-white rounded-full ${i % 2 === 0 ? 'w-1' : (i % 3 === 0 ? 'w-[2px]' : 'w-0.5')} h-full`}></div>
+                                     ))}
+                                   </div>
+                                   <p className="text-zinc-600 font-mono text-[10px] tracking-[0.4em] mt-3">VAGA-GARANTIDA-081</p>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* === BOTÕES FINAIS === */}
+                      <div className="space-y-3 mt-8">
+                        <a href={linkGrupoWhats} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 w-full bg-[#25D366] p-4 rounded-xl font-black uppercase tracking-widest shadow-xl transform hover:scale-105 transition-all text-white text-xs border border-[#25D366]/50">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.996 0A11.96 11.96 0 0 0 0 11.996c0 2.115.548 4.14 1.59 5.955L.003 24l6.19-1.62A11.956 11.956 0 0 0 11.996 24C18.625 24 24 18.625 24 11.996 24 5.367 18.625 0 11.996 0zM7.202 5.86c.218-.01.442-.016.666-.016.27 0 .618.01.9.52.316.57 1.018 2.476 1.107 2.665.09.19.16.42-.03.65-.188.22-.26.33-.518.65-.258.31-.54.67-.77.905-.258.26-.528.53-.228 1.04.3.5 1.34 2.21 2.89 3.58 2.008 1.77 3.658 2.33 4.198 2.56.54.23.86.19 1.17-.13.31-.32 1.34-1.57 1.7-2.11.36-.54.72-.45 1.21-.26.5.19 3.16 1.49 3.7 1.76.54.26.9.39 1.03.6.13.22.13 1.26-.35 2.48-.48 1.22-2.82 2.38-3.9 2.45-1.07.07-2.22.4-6.35-1.22-4.9-1.92-8.08-6.9-8.33-7.23-.25-.33-1.98-2.65-1.98-5.06s1.22-3.6 1.66-4.06c.44-.45 1.05-.58 1.54-.58z"/>
+                          </svg>
+                          Entrar no Grupo Oficial
+                        </a>
+                        
+                        <button onClick={comprarMaisIngressos} className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 p-4 rounded-xl font-bold uppercase tracking-widest transition-all text-white text-[10px] border border-zinc-700">
+                          <Plus size={16}/> Comprar ingresso para outra pessoa
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -487,7 +604,6 @@ const Trilha3Reinos = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <motion.a whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} href={linkInstagram} target="_blank" className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black py-3 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"><Instagram size={16} /> Siga no Insta</motion.a>
               
-              {/* BOTÃO DO WHATSAPP DO RODAPÉ - CORRIGIDO */}
               <motion.a whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} href={linkGrupoGeral} target="_blank" className="flex-1 bg-emerald-600 text-white font-black py-3 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M11.996 0A11.96 11.96 0 0 0 0 11.996c0 2.115.548 4.14 1.59 5.955L.003 24l6.19-1.62A11.956 11.956 0 0 0 11.996 24C18.625 24 24 18.625 24 11.996 24 5.367 18.625 0 11.996 0zM7.202 5.86c.218-.01.442-.016.666-.016.27 0 .618.01.9.52.316.57 1.018 2.476 1.107 2.665.09.19.16.42-.03.65-.188.22-.26.33-.518.65-.258.31-.54.67-.77.905-.258.26-.528.53-.228 1.04.3.5 1.34 2.21 2.89 3.58 2.008 1.77 3.658 2.33 4.198 2.56.54.23.86.19 1.17-.13.31-.32 1.34-1.57 1.7-2.11.36-.54.72-.45 1.21-.26.5.19 3.16 1.49 3.7 1.76.54.26.9.39 1.03.6.13.22.13 1.26-.35 2.48-.48 1.22-2.82 2.38-3.9 2.45-1.07.07-2.22.4-6.35-1.22-4.9-1.92-8.08-6.9-8.33-7.23-.25-.33-1.98-2.65-1.98-5.06s1.22-3.6 1.66-4.06c.44-.45 1.05-.58 1.54-.58z"/>

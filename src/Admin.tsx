@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserCheck, DollarSign, Users, ArrowLeft, Loader2, Search, ShieldAlert, Check, Download, Trash2 } from 'lucide-react';
+import { UserCheck, DollarSign, Users, ArrowLeft, Loader2, Search, ShieldAlert, Check, Download, Trash2, Clock } from 'lucide-react';
 
 const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
   const [adminData, setAdminData] = useState<any[]>([]);
@@ -80,9 +80,12 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
   };
 
   const exportarPlanilha = () => {
-    const headers = ["Nome Completo", "WhatsApp", "CPF", "Contato de Emergência", "Status"];
+    // Adicionado a coluna de Data da Compra no Excel!
+    const headers = ["Nome Completo", "WhatsApp", "CPF", "Contato de Emergência", "Status", "Data da Compra"];
     const csvRows = adminData.map(p => {
-      return [ `"${p.nome}"`, `"${p.telefone}"`, `"${p.cpf || 'Não informado'}"`, `"${p.contato_emergencia || 'Não informado'}"`, p.pago ? '"PAGO"' : '"PENDENTE"' ].join(';'); 
+      // Formata a data para a planilha
+      const dataHora = p.created_at ? new Date(p.created_at).toLocaleString('pt-BR') : 'N/A';
+      return [ `"${p.nome}"`, `"${p.telefone}"`, `"${p.cpf || 'Não informado'}"`, `"${p.contato_emergencia || 'Não informado'}"`, p.pago ? '"PAGO"' : '"PENDENTE"', `"${dataHora}"` ].join(';'); 
     });
     const csvContent = [headers.join(';'), ...csvRows].join('\n');
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -192,10 +195,18 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
                   <tr key={i} className="hover:bg-zinc-800/30 transition-all duration-300 group">
                     <td className="p-6">
                       <div className="font-black text-white text-base tracking-tight mb-1 group-hover:text-emerald-400 transition-colors">{p.nome}</div>
-                      <div className="flex gap-3 items-center">
+                      <div className="flex flex-col gap-2 items-start">
                         <span className="text-[10px] bg-zinc-950 text-zinc-500 px-2 py-1 rounded font-mono uppercase border border-zinc-800">
                           {p.cpf ? `CPF: ${p.cpf}` : 'CPF Pendente'}
                         </span>
+                        
+                        {/* AQUI ESTÁ A MÁGICA DA DATA E HORA DA COMPRA! */}
+                        {p.created_at && (
+                          <span className="text-[10px] text-zinc-500 flex items-center gap-1 font-bold uppercase tracking-widest mt-1">
+                            <Clock size={12} className="text-emerald-500/50" />
+                            {new Date(p.created_at).toLocaleDateString('pt-BR')} às {new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="p-6">
