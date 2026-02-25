@@ -25,12 +25,15 @@ const Trilha3Reinos = () => {
   const [senhaAdmin, setSenhaAdmin] = useState('');
   const [erroLoginAdmin, setErroLoginAdmin] = useState('');
 
+  // === CARTEIRA DE INGRESSOS VIRTUAL ===
+  const [meusIngressos, setMeusIngressos] = useState<any[]>([]);
+
   // === LINKS E VALORES ===
   const linkGrupoWhats = "https://chat.whatsapp.com/JiSGu7PT6S3Ds3h6ZObqdd"; 
   const linkGrupoGeral = "https://chat.whatsapp.com/BEjOT8bcJkZB8D8Krzxr3R"; 
   const linkInstagram = "https://www.instagram.com/invasores_081"; 
   
-  const valorIngresso = 1; 
+  const valorIngresso = 1; // Já deixei 20 para produção!
   const taxaPix = 0.50; 
 
   const formatarMoeda = (valor: number) => {
@@ -47,25 +50,25 @@ const Trilha3Reinos = () => {
 
   const images = ["/foto1.jpg", "/foto2.jpg", "/foto3.jpg", "/foto4.jpg"];
 
-  // === LÓGICA DE MEMÓRIA (TICKET SALVO) ===
+  // === RECUPERAR A CARTEIRA SALVA AO ABRIR O SITE ===
   useEffect(() => {
-    const ticketSalvo = localStorage.getItem('@trilha3reinos:ticket');
-    if (ticketSalvo) {
-      setParticipants(JSON.parse(ticketSalvo));
+    // Puxa a carteira nova, ou migra do formato antigo se a pessoa já tinha testado antes
+    const carteiraSalva = localStorage.getItem('@trilha3reinos:carteira') || localStorage.getItem('@trilha3reinos:ticket');
+    if (carteiraSalva) {
+      const ingressos = JSON.parse(carteiraSalva);
+      setMeusIngressos(ingressos);
+      localStorage.setItem('@trilha3reinos:carteira', JSON.stringify(ingressos));
+      localStorage.removeItem('@trilha3reinos:ticket'); // limpa o lixo antigo
+      
       setTelaAtual('pix');
       setStatusPagamento('pago');
     }
   }, []);
 
-  useEffect(() => {
-    if (statusPagamento === 'pago' && participants[0].name !== '') {
-      localStorage.setItem('@trilha3reinos:ticket', JSON.stringify(participants));
-    }
-  }, [statusPagamento, participants]);
-
   const comprarMaisIngressos = () => {
-    localStorage.removeItem('@trilha3reinos:ticket');
+    // Agora NÃO APAGA a memória. Apenas limpa a tela para uma nova compra!
     setParticipants([{ name: '', email: '', phone: '', emergency: '', cpf: '' }]);
+    setPaymentId(null);
     setStatusPagamento('pendente');
     setTelaAtual('formulario');
   };
@@ -124,6 +127,14 @@ const Trilha3Reinos = () => {
           
           if (data.status === 'approved') {
             setStatusPagamento('pago');
+            
+            // ADICIONA OS NOVOS INGRESSOS NA CARTEIRA SEM APAGAR OS VELHOS
+            setMeusIngressos(prev => {
+              const novaCarteira = [...prev, ...participants];
+              localStorage.setItem('@trilha3reinos:carteira', JSON.stringify(novaCarteira));
+              return novaCarteira;
+            });
+
             clearInterval(intervalo);
           }
         } catch (err) {
@@ -132,7 +143,7 @@ const Trilha3Reinos = () => {
       }, 3000);
     }
     return () => clearInterval(intervalo);
-  }, [paymentId, statusPagamento, telaAtual]);
+  }, [paymentId, statusPagamento, telaAtual, participants]);
 
   const removeParticipant = (index: number) => {
     const newParticipants = [...participants];
@@ -327,7 +338,7 @@ const Trilha3Reinos = () => {
         </div>
         <div className="container mx-auto px-6 pb-12 relative z-10">
           <span className="text-emerald-500 font-black uppercase tracking-[0.3em] text-[10px]">Invasores Apresenta</span>
-          <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter mt-1 uppercase leading-none">Trilha <br/> <span className="text-emerald-500">três Reinos</span></h1>
+          <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter mt-1 uppercase leading-none">Trilha <br/> <span className="text-emerald-500">3 Reinos</span></h1>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8">
             <a href="#inscricao" onClick={scrollToForm} className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 px-8 rounded-xl shadow-lg transition-all uppercase tracking-widest text-[10px]">Garantir Ingresso <ChevronRight size={14} /></a>
           </motion.div>
@@ -397,6 +408,14 @@ const Trilha3Reinos = () => {
                     <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white">INSCRIÇÃO</h2>
                     <p className="text-emerald-500 text-sm font-bold mt-2 tracking-widest">R$ 20,00 POR PESSOA</p>
                   </div>
+                  
+                  {/* BOTÃO DA CARTEIRA VIRTUAL APARECE AQUI! */}
+                  {meusIngressos.length > 0 && (
+                    <button onClick={() => { setTelaAtual('pix'); setStatusPagamento('pago'); }} className="w-full mb-8 bg-zinc-800/80 hover:bg-zinc-800 border border-emerald-500/30 text-emerald-400 p-4 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-widest text-xs transition-all shadow-lg">
+                      <Ticket size={18} /> Ver meus {meusIngressos.length} Ingressos Salvos
+                    </button>
+                  )}
+
                   <form onSubmit={handleSubmit} className="space-y-8">
                     {participants.map((participant, index) => (
                       <div key={index} className="p-6 rounded-3xl bg-zinc-800/40 border border-zinc-700/50 relative shadow-inner">
@@ -454,10 +473,11 @@ const Trilha3Reinos = () => {
                         <CheckCircle size={32} className="text-white" />
                       </div>
                       <h2 className="text-2xl font-black uppercase italic text-white">Pagamento Confirmado!</h2>
-                     
-                      {/* === ÁREA DOS TICKETS PREMIUM === */}
+                      
+                      {/* === ÁREA DA CARTEIRA VIRTUAL (TICKETS PREMIUM) === */}
                       <div className="space-y-8 text-left w-full max-w-md mx-auto pb-4">
-                        {participants.map((p, index) => (
+                        {/* AQUI MOSTRA TODOS OS INGRESSOS SALVOS NA MEMÓRIA! */}
+                        {meusIngressos.map((p, index) => (
                           <motion.div 
                             initial={{ y: 20, opacity: 0 }} 
                             animate={{ y: 0, opacity: 1 }} 
@@ -465,11 +485,8 @@ const Trilha3Reinos = () => {
                             key={index} 
                             className="relative bg-zinc-900 rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-zinc-800"
                           >
-                            {/* Header do Ticket */}
                             <div className="bg-gradient-to-br from-emerald-600 to-emerald-900 p-6 relative overflow-hidden">
-                               {/* Efeito de textura / brilho */}
                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
-                               
                                <div className="flex justify-between items-start relative z-10">
                                  <div>
                                    <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Passaporte</p>
@@ -480,32 +497,20 @@ const Trilha3Reinos = () => {
                                  </div>
                                </div>
                             </div>
-
-                            {/* Recorte do Ticket (Efeito Perfurado) */}
                             <div className="relative h-8 bg-zinc-900 flex items-center">
-                              {/* Círculo Esquerdo */}
                               <div className="absolute -left-4 w-8 h-8 bg-zinc-950 rounded-full border-r border-zinc-800"></div>
-                              {/* Linha Tracejada */}
                               <div className="w-full border-t-2 border-dashed border-zinc-800/80 mx-6"></div>
-                              {/* Círculo Direito */}
                               <div className="absolute -right-4 w-8 h-8 bg-zinc-950 rounded-full border-l border-zinc-800"></div>
                             </div>
-
-                            {/* Corpo do Ticket */}
                             <div className="p-6 pt-2 pb-8 bg-zinc-900 relative">
-                              {/* Marca d'água invisível ao fundo */}
                               <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
                                 <Mountain size={140} />
                               </div>
-
                               <div className="space-y-6 relative z-10">
-                                {/* Nome do Participante */}
                                 <div>
                                   <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-[0.2em] mb-1">Invasor Titular</p>
                                   <p className="text-white font-black text-xl uppercase tracking-tight truncate">{p.name}</p>
                                 </div>
-
-                                {/* Grid de Informações */}
                                 <div className="grid grid-cols-2 gap-4 bg-zinc-950/50 p-4 rounded-2xl border border-zinc-800/50">
                                   <div>
                                     <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 flex items-center gap-1"><Calendar size={10}/> Data</p>
@@ -522,11 +527,8 @@ const Trilha3Reinos = () => {
                                     <p className="text-red-400 font-bold text-xs truncate">{p.emergency}</p>
                                   </div>
                                 </div>
-
-                                {/* Rodapé com Código de Barras Falso */}
                                 <div className="flex flex-col items-center justify-center pt-2">
                                    <div className="h-10 w-full max-w-[200px] flex gap-[3px] justify-center opacity-70">
-                                     {/* Barrinhas aleatórias geradas por código */}
                                      {[...Array(30)].map((_, i) => (
                                        <div key={i} className={`bg-white rounded-full ${i % 2 === 0 ? 'w-1' : (i % 3 === 0 ? 'w-[2px]' : 'w-0.5')} h-full`}></div>
                                      ))}
