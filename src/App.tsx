@@ -32,8 +32,9 @@ const Trilha3Reinos = () => {
   const linkGrupoWhats = "https://chat.whatsapp.com/JiSGu7PT6S3Ds3h6ZObqdd"; 
   const linkGrupoGeral = "https://chat.whatsapp.com/BEjOT8bcJkZB8D8Krzxr3R"; 
   const linkInstagram = "https://www.instagram.com/invasores_081"; 
+  const linkSuporte = "https://wa.me/5581999999999?text=Olá,%20preciso%20de%20ajuda%20com%20meu%20ingresso%20da%20Trilha%203%20Reinos."; // COLOQUE SEU NÚMERO AQUI
   
-  const valorIngresso = 1; // Já deixei 20 para produção!
+  const valorIngresso = 1; 
   const taxaPix = 0.50; 
 
   const formatarMoeda = (valor: number) => {
@@ -338,7 +339,7 @@ const Trilha3Reinos = () => {
         </div>
         <div className="container mx-auto px-6 pb-12 relative z-10">
           <span className="text-emerald-500 font-black uppercase tracking-[0.3em] text-[10px]">Invasores Apresenta</span>
-          <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter mt-1 uppercase leading-none">Trilha <br/> <span className="text-emerald-500">3 Reinos</span></h1>
+          <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter mt-1 uppercase leading-none">Trilha <br/> <span className="text-emerald-500"> três Reinos</span></h1>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8">
             <a href="#inscricao" onClick={scrollToForm} className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 px-8 rounded-xl shadow-lg transition-all uppercase tracking-widest text-[10px]">Garantir Ingresso <ChevronRight size={14} /></a>
           </motion.div>
@@ -520,7 +521,12 @@ const Trilha3Reinos = () => {
                                     <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 flex items-center gap-1"><Clock size={10}/> Partida</p>
                                     <p className="text-zinc-200 font-bold text-sm">07:00 AM</p>
                                   </div>
-                                 
+                                  <div className="col-span-2 border-t border-zinc-800/50 pt-3 mt-1">
+                                    <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 flex items-center gap-1">
+                                      <AlertTriangle size={10} className="text-red-500"/> Contato SOS
+                                    </p>
+                                    <p className="text-red-400 font-bold text-xs truncate">{p.emergency}</p>
+                                  </div>
                                 </div>
                                 <div className="flex flex-col items-center justify-center pt-2">
                                    <div className="h-10 w-full max-w-[200px] flex gap-[3px] justify-center opacity-70">
@@ -536,7 +542,7 @@ const Trilha3Reinos = () => {
                         ))}
                       </div>
 
-                      {/* === BOTÕES FINAIS === */}
+                      {/* === BOTÕES FINAIS COM SUPORTE === */}
                       <div className="space-y-3 mt-8">
                         <a href={linkGrupoWhats} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 w-full bg-[#25D366] p-4 rounded-xl font-black uppercase tracking-widest shadow-xl transform hover:scale-105 transition-all text-white text-xs border border-[#25D366]/50">
                           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -548,6 +554,10 @@ const Trilha3Reinos = () => {
                         <button onClick={comprarMaisIngressos} className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 p-4 rounded-xl font-bold uppercase tracking-widest transition-all text-white text-[10px] border border-zinc-700">
                           <Plus size={16}/> Comprar ingresso para outra pessoa
                         </button>
+
+                        <a href={linkSuporte} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full text-zinc-500 hover:text-emerald-500 py-3 font-bold uppercase tracking-widest transition-all text-[9px] mt-2">
+                          <AlertCircle size={14}/> Solicitar edição de dados ou devolução
+                        </a>
                       </div>
                     </div>
                   ) : (
