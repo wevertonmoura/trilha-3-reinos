@@ -30,7 +30,7 @@ const Trilha3Reinos = () => {
   const linkGrupoGeral = "https://chat.whatsapp.com/BEjOT8bcJkZB8D8Krzxr3R"; 
   const linkInstagram = "https://www.instagram.com/invasores_081"; 
   
-  const valorIngresso = 20; 
+  const valorIngresso = 1; 
   const taxaPix = 0.50; 
 
   const formatarMoeda = (valor: number) => {
@@ -327,7 +327,7 @@ const Trilha3Reinos = () => {
         </div>
         <div className="container mx-auto px-6 pb-12 relative z-10">
           <span className="text-emerald-500 font-black uppercase tracking-[0.3em] text-[10px]">Invasores Apresenta</span>
-          <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter mt-1 uppercase leading-none">Trilha <br/> <span className="text-emerald-500">3 Reinos</span></h1>
+          <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter mt-1 uppercase leading-none">Trilha <br/> <span className="text-emerald-500">três Reinos</span></h1>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8">
             <a href="#inscricao" onClick={scrollToForm} className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 px-8 rounded-xl shadow-lg transition-all uppercase tracking-widest text-[10px]">Garantir Ingresso <ChevronRight size={14} /></a>
           </motion.div>
@@ -437,7 +437,7 @@ const Trilha3Reinos = () => {
                     <div className="flex items-start gap-3 pt-6 border-t border-zinc-700/50">
                       <input type="checkbox" id="terms" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 h-5 w-5 accent-emerald-500 cursor-pointer rounded" />
                       <label htmlFor="terms" className="text-[11px] text-zinc-400 font-bold leading-relaxed cursor-pointer select-none">
-                        Aceito o Termo de Responsabilidade (declaro estar em boas condições de saúde) e estou ciente de que cancelamentos com reembolso só podem ser solicitados até 48h antes do evento.
+                        Aceito o Termo de Responsabilidade (declaro estar em boas condições de saúde) e estou ciente de que cancelamentos com reembolso só podem ser solicitados até 72h antes do evento.
                       </label>
                     </div>
                     {errorMsg && <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-[10px] font-bold flex items-center gap-2"><AlertCircle size={14}/> {errorMsg}</div>}
@@ -454,8 +454,7 @@ const Trilha3Reinos = () => {
                         <CheckCircle size={32} className="text-white" />
                       </div>
                       <h2 className="text-2xl font-black uppercase italic text-white">Pagamento Confirmado!</h2>
-                      <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Tire um print dos seus tickets abaixo</p>
-                      
+                     
                       {/* === ÁREA DOS TICKETS PREMIUM === */}
                       <div className="space-y-8 text-left w-full max-w-md mx-auto pb-4">
                         {participants.map((p, index) => (
