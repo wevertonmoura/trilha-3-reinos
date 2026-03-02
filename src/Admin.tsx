@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserCheck, DollarSign, Users, ArrowLeft, Loader2, Search, ShieldAlert, Check, Download, Trash2, Clock } from 'lucide-react';
+import { UserCheck, DollarSign, Users, ArrowLeft, Loader2, Search, ShieldAlert, Check, Download, Trash2, Clock, MessageCircle } from 'lucide-react';
 
 const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
   const [adminData, setAdminData] = useState<any[]>([]);
@@ -79,11 +79,24 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
     }
   };
 
+  // === FUNÇÃO PARA CHAMAR NO WHATSAPP ===
+  const chamarNoWhatsApp = (telefone: string, nome: string) => {
+    let numeroFormatado = telefone.replace(/\D/g, ''); // Tira traços e parênteses
+    
+    // Adiciona o código do Brasil (55) se a pessoa não tiver digitado
+    if (numeroFormatado.length === 10 || numeroFormatado.length === 11) {
+      numeroFormatado = '55' + numeroFormatado;
+    }
+
+    const primeiroNome = nome.split(' ')[0]; // Pega só o primeiro nome pra ser mais amigável
+    const mensagem = encodeURIComponent(`Fala ${primeiroNome}! Aqui é da organização da Trilha 3 Reinos. Vi que sua inscrição está confirmada. Você conseguiu entrar no nosso grupo oficial do WhatsApp?`);
+    
+    window.open(`https://wa.me/${numeroFormatado}?text=${mensagem}`, '_blank');
+  };
+
   const exportarPlanilha = () => {
-    // Adicionado a coluna de Data da Compra no Excel!
     const headers = ["Nome Completo", "WhatsApp", "CPF", "Contato de Emergência", "Status", "Data da Compra"];
     const csvRows = adminData.map(p => {
-      // Formata a data para a planilha
       const dataHora = p.created_at ? new Date(p.created_at).toLocaleString('pt-BR') : 'N/A';
       return [ `"${p.nome}"`, `"${p.telefone}"`, `"${p.cpf || 'Não informado'}"`, `"${p.contato_emergencia || 'Não informado'}"`, p.pago ? '"PAGO"' : '"PENDENTE"', `"${dataHora}"` ].join(';'); 
     });
@@ -200,7 +213,6 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
                           {p.cpf ? `CPF: ${p.cpf}` : 'CPF Pendente'}
                         </span>
                         
-                        {/* AQUI ESTÁ A MÁGICA DA DATA E HORA DA COMPRA! */}
                         {p.created_at && (
                           <span className="text-[10px] text-zinc-500 flex items-center gap-1 font-bold uppercase tracking-widest mt-1">
                             <Clock size={12} className="text-emerald-500/50" />
@@ -240,6 +252,15 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
                             </div>
                           </>
                         )}
+
+                        {/* NOVO BOTÃO: CHAMAR NO WHATSAPP */}
+                        <button 
+                          onClick={() => chamarNoWhatsApp(p.telefone, p.nome)}
+                          className="bg-zinc-800 hover:bg-[#25D366] hover:text-white text-zinc-400 p-2 rounded-full transition-colors border border-zinc-700 hover:border-[#25D366] group-hover:opacity-100 opacity-60 flex items-center justify-center ml-2"
+                          title="Enviar mensagem no WhatsApp"
+                        >
+                          <MessageCircle size={16} />
+                        </button>
 
                         {/* BOTÃO EXCLUIR */}
                         <button 
