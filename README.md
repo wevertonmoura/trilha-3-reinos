@@ -1,73 +1,67 @@
-# React + TypeScript + Vite
+# ⛰️ Trilha 3 Reinos - Plataforma de Vendas e Ingressos
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Status](https://img.shields.io/badge/Status-Concluído-success?style=for-the-badge)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
-Currently, two official plugins are available:
+> Sistema completo e automatizado para venda de ingressos, desenvolvido para o grupo de corrida Invasores. A plataforma gerencia desde a inscrição e pagamento via PIX até a emissão de tickets virtuais e administração do evento.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 💻 Sobre o Projeto
 
-## React Compiler
+A **Trilha 3 Reinos** exigia um sistema robusto para evitar gargalos na organização (como conferência manual de comprovantes e perda de dados). Para resolver isso, desenvolvi uma aplicação Full-Stack serverless que gera o PIX dinâmico, aguarda o pagamento, libera o ingresso automaticamente e oferece um painel de controle blindado para a equipe organizadora.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📸 Screenshots
+*(Coloque aqui imagens do seu projeto. Exemplo:)*
+<p align="center">
+  <img src="URL_DA_SUA_IMAGEM_TELA_INICIAL" width="45%" alt="Tela Inicial">
+  <img src="URL_DA_SUA_IMAGEM_TICKET" width="45%" alt="Carteira de Tickets">
+</p>
 
-## Expanding the ESLint configuration
+## ✨ Principais Funcionalidades
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* **🛒 Checkout e Pagamento Automatizado:** Integração direta com a API do Mercado Pago. O sistema gera um QR Code e um "Copia e Cola" dinâmico.
+* **⚡ Webhook em Tempo Real:** Uma Vercel Serverless Function "escuta" a resposta do banco e atualiza o status do ingresso automaticamente no Supabase.
+* **🎫 Carteira Virtual Premium:** Após o pagamento, os ingressos são gerados com um design realista (estilo passaporte) e salvos localmente (`localStorage`), permitindo que o usuário feche o site e não perca seu ingresso.
+* **🛡️ Painel Admin Blindado:** Rota oculta protegida por variáveis de ambiente (sem senhas expostas no front-end).
+* **📊 Gestão de Participantes (CRM):** O painel permite aprovar ingressos manualmente, excluir participantes, chamar usuários no WhatsApp com um clique e exportar a lista final para Excel (CSV).
+* **🎨 UI/UX Moderna:** Interface no estilo "Dark Mode" com feedbacks visuais, validação de formulários (CPF e Telefone) e animações fluidas.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠️ Tecnologias Utilizadas
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+O projeto foi construído utilizando o que há de mais moderno no ecossistema JavaScript:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+* **Front-end:** React 19, Vite, TypeScript, Tailwind CSS.
+* **Animações & UI:** Framer Motion, Lucide React.
+* **Back-end & Hospedagem:** Vercel Serverless Functions (Node.js).
+* **Banco de Dados:** Supabase (PostgreSQL).
+* **Integração Financeira:** Mercado Pago API (via Fetch).
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## ⚙️ Arquitetura do Pagamento (Fluxo)
+1. O usuário preenche o formulário. Os dados vão para o **Supabase** com status `pago: false`.
+2. O front-end chama a API do **Mercado Pago** para gerar a cobrança (R$ 20 + taxas).
+3. O usuário escaneia o PIX. Um loop (Polling) verifica o status da transação.
+4. Quando pago, o **Webhook** (Serverless Function) recebe o aviso do Mercado Pago, autentica com a Chave Mestra e altera o status no Supabase para `pago: true`.
+5. A tela do usuário exibe a **Carteira Virtual** e salva os dados na memória do dispositivo.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🚀 Como rodar o projeto localmente
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+```bash
+# Clone este repositório
+$ git clone [https://github.com/wevertonmoura/SEU_REPOSITORIO.git](https://github.com/wevertonmoura/SEU_REPOSITORIO.git)
+
+# Acesse a pasta do projeto
+$ cd SEU_REPOSITORIO
+
+# Instale as dependências
+$ npm install
+
+# Crie um arquivo .env na raiz e adicione suas chaves:
+VITE_SENHA_ADMIN=sua_senha_segura
+SUPABASE_SERVICE_KEY=sua_chave_secreta_do_supabase
+MP_ACCESS_TOKEN=seu_token_do_mercado_pago
+
+# Execute a aplicação em modo de desenvolvimento
+$ npm run dev
