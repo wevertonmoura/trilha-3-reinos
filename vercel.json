@@ -27,7 +27,7 @@
   "crons": [
     {
       "path": "/api/recuperar-carrinho",
-      "schedule": "0,30 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
