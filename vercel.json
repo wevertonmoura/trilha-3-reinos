@@ -4,5 +4,11 @@
       "source": "/(.*)",
       "destination": "/"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/recuperar-carrinho",
+      "schedule": "0,30 * * * *"
+    }
   ]
 }
