@@ -15,21 +15,18 @@ const transporter = nodemailer.createTransport({
 });
 
 export default async function handler(req, res) {
-  // Importante: Mercado Pago às vezes envia via POST ou GET dependendo da configuração
   if (req.method !== 'POST') return res.status(405).send('Método não permitido');
 
   try {
-    // Pegando o ID do pagamento de várias formas possíveis (body ou query)
     const paymentId = req.body?.data?.id || req.query?.id || req.query['data.id'];
     
     if (!paymentId) {
       console.log("⚠️ Notificação recebida sem ID de pagamento.");
-      return res.status(200).send('OK'); // Respondemos 200 para o MP parar de tentar
+      return res.status(200).send('OK');
     }
 
     console.log(`🔍 Processando pagamento ID: ${paymentId}`);
 
-    // 1. Consultar Mercado Pago
     const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: { 'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}` }
     });
@@ -41,30 +38,30 @@ export default async function handler(req, res) {
 
     const mpData = await mpResponse.json();
 
-    // 2. Verificar se foi aprovado
     if (mpData.status === 'approved') {
       const emailPrincipal = mpData.external_reference;
-      console.log(`✅ Pagamento APROVADO para o e-mail: ${emailPrincipal}`);
+      const idDoPagamentoString = paymentId.toString(); // ID que salvamos na nova coluna do banco
+      
+      console.log(`✅ Pagamento APROVADO para: ${emailPrincipal}`);
 
-      if (emailPrincipal) {
-        // Buscamos as inscrições vinculadas a esse e-mail que ainda não foram pagas
+      if (idDoPagamentoString) {
+        // === MUDANÇA AQUI: Buscamos pelo payment_id em vez do e-mail ===
         const { data: inscricoes, error: erroBusca } = await supabase
           .from('inscricao_trilha')
           .select('*')
-          .eq('email', emailPrincipal);
+          .eq('payment_id', idDoPagamentoString);
 
         if (!erroBusca && inscricoes && inscricoes.length > 0) {
           
-          // Só enviamos e-mail se o primeiro da lista ainda não estiver como pago
           if (!inscricoes[0].pago) {
             
-            console.log(`📝 Atualizando ${inscricoes.length} inscritos no banco...`);
+            console.log(`📝 Atualizando ${inscricoes.length} inscritos deste pagamento...`);
 
-            // Atualiza TODAS as inscrições com esse e-mail para PAGO
+            // === MUDANÇA AQUI: Atualizamos apenas quem tem esse payment_id ===
             const { error: erroUpdate } = await supabase
               .from('inscricao_trilha')
               .update({ pago: true })
-              .eq('email', emailPrincipal);
+              .eq('payment_id', idDoPagamentoString);
 
             if (erroUpdate) {
               console.error("❌ Erro ao atualizar Supabase:", erroUpdate.message);
@@ -112,12 +109,10 @@ export default async function handler(req, res) {
               }
             }
           } else {
-              console.log("ℹ️ Inscrição já estava marcada como paga. Ignorando re-envio.");
+              console.log("ℹ️ Esta transação já estava marcada como paga.");
           }
         }
       }
-    } else {
-        console.log(`⚠️ Pagamento ${paymentId} com status: ${mpData.status}`);
     }
     
     return res.status(200).send('Webhook processado');

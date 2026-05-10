@@ -13,45 +13,13 @@ export default async function handler(req, res) {
   try {
     const cpfTitular = participantes[0].cpf.replace(/\D/g, '');
     const telefoneTitular = participantes[0].phone.replace(/\D/g, '');
+    const webhookUrl = 'https://vemparatrilha.vercel.app/api/webhook';
 
-    // === 1. A TRAVA MESTRA: LIMPANDO O "LIXO" (CARRINHO ABANDONADO) ===
-    // Apagamos todas as tentativas ANTIGAS que a pessoa não pagou. 
-    // Os ingressos que já estão com "pago: true" ficam protegidos!
-    
-    await supabase.from('inscricao_trilha').delete().eq('email', emailPrincipal).eq('pago', false);
-    await supabase.from('inscricao_trilha').delete().eq('cpf', cpfTitular).eq('pago', false);
-    await supabase.from('inscricao_trilha').delete().eq('telefone', telefoneTitular).eq('pago', false);
-
-
-    // === 2. SALVANDO APENAS A COMPRA ATUAL ===
-    const dadosParaSalvar = participantes.map((p, index) => {
-      const cpfLimpo = p.cpf ? p.cpf.replace(/\D/g, '') : null;
-      
-      return {
-        nome: p.name || 'Sem Nome',
-        email: index === 0 ? emailPrincipal : (p.email || emailPrincipal),
-        telefone: index === 0 ? telefoneTitular : (p.phone ? p.phone.replace(/\D/g, '') : telefoneTitular),
-        cpf: index === 0 ? cpfLimpo : null, 
-        contato_emergencia: contatoEmergencia || null,
-        pago: false
-      };
-    });
-
-    const { error: erroInsert } = await supabase.from('inscricao_trilha').insert(dadosParaSalvar);
-    
-    if (erroInsert) {
-      console.error("Erro do Supabase:", erroInsert);
-      throw new Error(`Erro do Banco de Dados: ${erroInsert.message}`);
-    }
-
-    // === 3. GERAÇÃO DO PIX NO MERCADO PAGO ===
+    // === 1. PRIMEIRO: GERAMOS O PIX PARA TER O ID DO PAGAMENTO ===
     const payerName = participantes[0].name.trim().split(" ");
     const firstName = payerName[0];
     const lastName = payerName.length > 1 ? payerName.slice(1).join(" ") : "Participante";
-
-    // URL correta do seu site na Vercel
-    const webhookUrl = 'https://vemparatrilha.vercel.app/api/webhook';
-
+    
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
@@ -76,11 +44,37 @@ export default async function handler(req, res) {
 
     const mpData = await response.json();
 
-    if (mpData.id) {
-      res.status(200).json(mpData);
-    } else {
-      res.status(400).json({ error: 'Erro na API do Mercado Pago', details: mpData });
+    // Se der erro na geração do PIX, paramos aqui e avisamos o usuário
+    if (!mpData.id) {
+      return res.status(400).json({ error: 'Erro na API do Mercado Pago', details: mpData });
     }
+
+    const idDoPagamento = mpData.id.toString();
+
+    // === 2. SEGUNDO: SALVAMOS NO BANCO COM O ID ÚNICO (SEM DELETAR HISTÓRICO) ===
+    const dadosParaSalvar = participantes.map((p, index) => {
+      const cpfLimpo = p.cpf ? p.cpf.replace(/\D/g, '') : null;
+      
+      return {
+        nome: p.name || 'Sem Nome',
+        email: index === 0 ? emailPrincipal : (p.email || emailPrincipal),
+        telefone: index === 0 ? telefoneTitular : (p.phone ? p.phone.replace(/\D/g, '') : telefoneTitular),
+        cpf: index === 0 ? cpfLimpo : null, 
+        contato_emergencia: contatoEmergencia || null,
+        pago: false,
+        payment_id: idDoPagamento // <--- Aqui está o pulo do gato! Salvando o recibo!
+      };
+    });
+
+    const { error: erroInsert } = await supabase.from('inscricao_trilha').insert(dadosParaSalvar);
+    
+    if (erroInsert) {
+      console.error("Erro do Supabase:", erroInsert);
+      throw new Error(`Erro do Banco de Dados: ${erroInsert.message}`);
+    }
+
+    // === 3. DEVOLVEMOS O QR CODE PARA A TELA ===
+    res.status(200).json(mpData);
 
   } catch (error) {
     console.error("Erro no Servidor:", error);
