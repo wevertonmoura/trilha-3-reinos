@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     const lastName = payerName.length > 1 ? payerName.slice(1).join(" ") : "Participante";
     const payerCpf = participantes[0].cpf.replace(/\D/g, '');
 
-    const webhookUrl = 'https://trilha-3-reino.vercel.app/api/webhook';
+    const webhookUrl = 'https://vemparatrilha.vercel.app/api/webhook';
 
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
