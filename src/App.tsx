@@ -414,7 +414,7 @@ const Trilha3Reinos = () => {
                             if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
                             if (v.length > 10) v = `${v.slice(0, 10)}-${v.slice(10)}`;
                             setListaEsperaFone(v);
-                          }} className="w-full bg-zinc-950 border border-zinc-700/50 rounded-xl px-4 py-3 text-white font-bold text-sm" placeholder="(81) 9...." />
+                          }} className="w-full bg-zinc-950 border border-zinc-700/50 rounded-xl px-4 py-3 text-white font-bold text-sm" placeholder="(81) 99999-9999" />
                         </div>
                         <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-black py-4 rounded-xl shadow-xl mt-4 uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all">
                           Entrar na Lista VIP <ChevronRight size={16}/>
@@ -460,7 +460,7 @@ const Trilha3Reinos = () => {
                           </div>
                           <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">WhatsApp</label>
-                            <input type="tel" value={participant.phone} onChange={e => updateParticipant(index, 'phone', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="(81) 9...." />
+                            <input type="tel" value={participant.phone} onChange={e => updateParticipant(index, 'phone', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="(81) 99999-9999" />
                           </div>
                           <div className="space-y-1">
                             <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">CPF</label>
@@ -477,7 +477,7 @@ const Trilha3Reinos = () => {
                                 <label className="text-[10px] font-black uppercase text-zinc-400 ml-1">Contato de Emergência (SOS)</label>
                                 <div className="grid grid-cols-2 gap-3">
                                   <input type="text" value={participant.emergencyName} onChange={e => updateParticipant(index, 'emergencyName', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="Nome" />
-                                  <input type="tel" value={participant.emergencyPhone} onChange={e => updateParticipant(index, 'emergencyPhone', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="(81) 9...." />
+                                  <input type="tel" value={participant.emergencyPhone} onChange={e => updateParticipant(index, 'emergencyPhone', e.target.value)} className="w-full bg-zinc-900/80 border border-zinc-700/50 rounded-xl px-4 py-3 focus:border-emerald-500 outline-none font-bold text-sm text-white transition-all shadow-sm" placeholder="(81) 99999-9999" />
                                 </div>
                               </div>
                             </>
