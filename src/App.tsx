@@ -63,7 +63,7 @@ const Trilha3Reinos = () => {
   const calcularValorIngressos = (qtd: number) => {
     const pares = Math.floor(qtd / 2); 
     const avulsos = qtd % 2;           
-    return (pares * 3) + (avulsos * 1);
+    return (pares * 3) + (avulsos * 50);
   };
 
   const formatarMoeda = (valor: number) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
