@@ -36,9 +36,14 @@ const Trilha3Reinos = () => {
   const linkGrupoGeral = "https://chat.whatsapp.com/H5DWJOz0wcC2PntYSq1t8y"; 
   const linkInstagram = "https://www.instagram.com/vem_para_trilha?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="; 
    
-  
-  const valorIngresso = 50; 
-  const taxaPix = 0.50; 
+  const taxaPix = 1; // Taxa de transação de R$ 1,00
+
+  // === LÓGICA DE PREÇOS (VOCÊ + 1 AMIGO) ===
+  const calcularValorIngressos = (qtd: number) => {
+    const pares = Math.floor(qtd / 2); 
+    const avulsos = qtd % 2;           
+    return (pares * 90) + (avulsos * 50);
+  };
 
   const formatarMoeda = (valor: number) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -53,7 +58,6 @@ const Trilha3Reinos = () => {
 
   const images = ["/foto1.jpg", "/foto2.jpg", "/foto3.jpg", "/foto4.jpg"];
 
-  // CHECAR QUANTIDADE DE VAGAS OCUPADAS AO ABRIR O SITE
   useEffect(() => {
     const fetchVagas = async () => {
       try {
@@ -75,8 +79,6 @@ const Trilha3Reinos = () => {
       setStatusPagamento('pago');
     }
   }, []);
-
-
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -214,7 +216,7 @@ const Trilha3Reinos = () => {
     try {
       const mainEmergency = `${participants[0].emergencyName} - ${participants[0].emergencyPhone}`;
       const mainEmail = participants[0].email;
-      const valorTotal = Number(((participants.length * valorIngresso) + taxaPix).toFixed(2)); 
+      const valorTotal = Number((calcularValorIngressos(participants.length) + taxaPix).toFixed(2)); 
 
       const response = await fetch('/api/gerar-pix', {
         method: 'POST',
@@ -319,8 +321,8 @@ const Trilha3Reinos = () => {
               <h2 className="text-2xl font-black uppercase italic mb-6 border-b border-zinc-900 pb-2 text-zinc-500">Descrição do evento</h2>
               <div className="space-y-6 text-zinc-400 text-lg leading-relaxed">
                 <p className="text-white font-bold italic">Trilha Santuário Dos três reinos</p>
-                <p>A equipe <span className="text-white font-bold text-emerald-500">Vem Para Trilha</span> convida você para uma manhã de imersão total na natureza, explorando as belas paisagens da região.</p>
-                <p>Esta é a oportunidade perfeita para sair da rotina, respirar ar puro e se reconectar. Nossa trilha foi planejada para proporcionar uma experiência energizante, e como recompensa, um refrescante banho de rio para lavar a alma e renovar as energias.</p>
+                <p>Precisa dar uma pausa na rotina? O projeto <span className="text-white font-bold text-emerald-500">Vem Para Trilha</span> preparou uma manhã de imersão completa na natureza para você respirar novos ares.</p>
+                <p>Nossa rota foi cuidadosamente desenhada para unir o desafio da caminhada com a paz da contemplação. Venha gastar energia na trilha e fechar a experiência com um refrescante banho de rio. A oportunidade perfeita para renovar a mente e colecionar boas memórias.</p>
               </div>
               <div className="mt-10">
                 <h2 className="text-xl font-black uppercase italic mb-6 text-zinc-500 tracking-widest">Explore o Cenário</h2>
@@ -340,7 +342,7 @@ const Trilha3Reinos = () => {
               <InfoRow icon={<Calendar />} title="Data" text="14 de Junho de 2026" />
               <InfoRow icon={<Clock />} title="Horário" text="07:00 às 12:00" />
               <a href="https://www.google.com/maps/place/?q=place_id:ChIJ4-tYpb8RqwcRxSQFPEP7it4" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><InfoRow icon={<MapPin className="text-emerald-500" />} title="Localização" text="Guabiraba, Recife - PE" /></a>
-              <InfoRow icon={<Trophy />} title="Investimento" text={`R$ ${valorIngresso},00 por pessoa`} />
+              <InfoRow icon={<Trophy />} title="Investimento" text="R$ 50 Individual | R$ 90 (Você + 1 Amigo)" />
             </section>
 
             <section>
@@ -367,9 +369,9 @@ const Trilha3Reinos = () => {
                   </div>
                 </div>
 
-                <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5"><Ticket className="text-emerald-500 shrink-0" size={32}/><div><h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Investimento</h4><p className="text-sm text-zinc-400 leading-relaxed">O valor da inscrição é de <strong className="text-emerald-500">R$ {valorIngresso},00 por pessoa</strong>. Vagas limitadas.</p></div></div>
+                <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5"><Ticket className="text-emerald-500 shrink-0" size={32}/><div><h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Investimento</h4><p className="text-sm text-zinc-400 leading-relaxed">O valor da inscrição é de <strong className="text-emerald-500">R$ 50,00 (Individual) ou R$ 90,00 (Você + 1 Amigo)</strong>. Vagas limitadas.</p></div></div>
                 <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5"><VolumeX className="text-emerald-500 shrink-0" size={32}/><div><h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Som e Natureza</h4><p className="text-sm text-zinc-400 leading-relaxed">Não é permitido o uso de caixas de som em volume alto.</p></div></div>
-                <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5"><QrCode className="text-emerald-500 shrink-0" size={32}/><div><h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Pagamento via PIX</h4><p className="text-sm text-zinc-400 leading-relaxed">Confirmação automática via PIX. Acréscimo de taxa de <strong className="text-emerald-500">R$ 0,50</strong>.</p></div></div>
+                <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5"><QrCode className="text-emerald-500 shrink-0" size={32}/><div><h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Pagamento via PIX</h4><p className="text-sm text-zinc-400 leading-relaxed">Confirmação automática via PIX. Acréscimo de taxa de <strong className="text-emerald-500">R$ 1,00</strong>.</p></div></div>
                 <div className="bg-zinc-800/40 p-6 rounded-2xl border border-zinc-700/50 flex gap-5"><Coffee className="text-emerald-500 shrink-0" size={32}/><div><h4 className="font-bold text-white uppercase text-sm mb-2 tracking-widest">Café Coletivo</h4><p className="text-sm text-zinc-400 leading-relaxed">Pedimos que cada participante leve um item para compartilhar.</p></div></div>
               </div>
             </section>
@@ -434,7 +436,7 @@ const Trilha3Reinos = () => {
                 <>
                   <div className="text-center mb-10 relative">
                     <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white">INSCRIÇÃO</h2>
-                    <p className="text-emerald-500 text-sm font-bold mt-2 tracking-widest">R$ {valorIngresso},00 POR PESSOA</p>
+                    <p className="text-emerald-500 text-sm font-bold mt-2 tracking-widest">R$ 50 INDIVIDUAL | R$ 90 VOCÊ + 1 AMIGO</p>
                   </div>
                   
                   {meusIngressos.length > 0 && (
@@ -488,15 +490,17 @@ const Trilha3Reinos = () => {
                        <button type="button" onClick={addParticipant} className="w-full py-4 border-2 border-dashed border-zinc-600 rounded-2xl text-zinc-400 font-bold hover:border-emerald-500 hover:text-emerald-500 transition-all flex items-center justify-center gap-2 uppercase text-[10px] tracking-widest"><Plus size={16} /> Comprar outro ingresso</button>
                     )}
 
-                    <div className="flex items-start gap-3 pt-6 border-t border-zinc-700/50">
-                      <input type="checkbox" id="terms" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 h-5 w-5 accent-emerald-500 cursor-pointer rounded" />
-                      <label htmlFor="terms" className="text-[11px] text-zinc-400 font-bold leading-relaxed cursor-pointer select-none">
+                    {/* MUDANÇA: Checkbox englobado no <label> para aumentar área de clique */}
+                    <label className="flex items-start gap-3 pt-6 border-t border-zinc-700/50 cursor-pointer group">
+                      <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 h-5 w-5 accent-emerald-500 cursor-pointer rounded shrink-0 group-hover:ring-2 ring-emerald-500/50 transition-all" />
+                      <span className="text-[11px] text-zinc-400 font-bold leading-relaxed select-none group-hover:text-zinc-300 transition-colors">
                         Aceito o Termo de Responsabilidade (declaro estar em boas condições de saúde) e estou ciente de que NÃO haverá devolução ou reembolso do valor pago sob nenhuma hipótese.
-                      </label>
-                    </div>
+                      </span>
+                    </label>
+
                     {errorMsg && <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-[10px] font-bold flex items-center gap-2"><AlertCircle size={14}/> {errorMsg}</div>}
                     <button disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-black py-5 rounded-2xl shadow-xl transition-all uppercase tracking-widest flex items-center justify-center gap-3 text-sm mt-4">
-                      {loading ? <Loader2 className="animate-spin" /> : <>Finalizar (R$ {formatarMoeda((participants.length * valorIngresso) + taxaPix)}) <ChevronRight size={20} /></>}
+                      {loading ? <Loader2 className="animate-spin" /> : <>Finalizar (R$ {formatarMoeda(calcularValorIngressos(participants.length) + taxaPix)}) <ChevronRight size={20} /></>}
                     </button>
                   </form>
                 </>
@@ -568,7 +572,7 @@ const Trilha3Reinos = () => {
                       <div className="bg-zinc-800/40 border border-emerald-500/30 rounded-3xl p-6 shadow-inner relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
                         <p className="text-xs font-bold uppercase text-zinc-500 tracking-widest mb-2">Valor total</p>
-                        <p className="text-5xl font-black text-white tracking-tighter">R$ {formatarMoeda((participants.length * valorIngresso) + taxaPix)}</p>
+                        <p className="text-5xl font-black text-white tracking-tighter">R$ {formatarMoeda(calcularValorIngressos(participants.length) + taxaPix)}</p>
                       </div>
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 bg-zinc-950 p-2 pl-4 rounded-xl border border-zinc-700/50">
