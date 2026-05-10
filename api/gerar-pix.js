@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  'https://revyeudqlndidaiprabc.supabase.co',
+  process.env.VITE_SUPABASE_URL || 'https://revyeudqlndidaiprabc.supabase.co',
   process.env.SUPABASE_SERVICE_KEY
 );
 
@@ -14,32 +14,31 @@ export default async function handler(req, res) {
     // === 1. A TRAVA MESTRA (LIMPANDO PELO TELEFONE) ===
     const telefoneTitular = participantes[0].phone.replace(/\D/g, '');
 
-    // Deleta as tentativas velhas (não pagas) usando o Telefone do titular.
-    // Como o telefone do titular fica amarrado aos ingressos dos acompanhantes dele,
-    // o sistema limpa o grupo inteiro perfeitamente antes de gerar uma nova tentativa.
     await supabase
       .from('inscricao_trilha')
       .delete()
       .eq('telefone', telefoneTitular)
       .eq('pago', false);
 
-    // === 2. SALVAMENTO NO BANCO ===
-    const promises = participantes.map(async (p, index) => {
-      const cpfLimpo = p.cpf ? p.cpf.replace(/\D/g, '') : null;
+    // === 2. SALVAMENTO NO BANCO (BULK INSERT) ===
+    // Montamos um "pacote" com todos os participantes e salvamos de uma vez só!
+    const dadosParaSalvar = participantes.map((p, index) => ({
+      nome: p.name,
+      email: index === 0 ? emailPrincipal : (p.email || emailPrincipal),
+      telefone: telefoneTitular, // Amarramos todos ao telefone do titular
+      cpf: p.cpf ? p.cpf.replace(/\D/g, '') : null, // O acompanhante envia nulo e o banco aceita
+      contato_emergencia: contatoEmergencia,
+      pago: false
+    }));
 
-      const { error: erroInsert } = await supabase.from('inscricao_trilha').insert([{
-        nome: p.name,
-        email: index === 0 ? emailPrincipal : (p.email || emailPrincipal),
-        telefone: telefoneTitular, // Amarramos todos os acompanhantes ao telefone do titular
-        cpf: cpfLimpo,
-        contato_emergencia: contatoEmergencia,
-        pago: false
-      }]);
-      
-      if (erroInsert) throw new Error("Erro ao registrar participante no banco.");
-    });
-
-    await Promise.all(promises);
+    // Inserção em lote (o Supabase aceita um Array com vários objetos)
+    const { error: erroInsert } = await supabase.from('inscricao_trilha').insert(dadosParaSalvar);
+    
+    // Se o banco chiar, agora ele vai te dizer exatamente o motivo na tela!
+    if (erroInsert) {
+      console.error("Erro do Supabase:", erroInsert);
+      throw new Error(`Erro do Banco de Dados: ${erroInsert.message}`);
+    }
 
     // === 3. GERAÇÃO DO PIX NO MERCADO PAGO ===
     const payerName = participantes[0].name.trim().split(" ");
