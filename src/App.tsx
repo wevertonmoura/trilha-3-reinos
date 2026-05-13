@@ -59,13 +59,12 @@ const Trilha3Reinos = () => {
    
   const taxaPix = 1; // Taxa de transação de R$ 1,00
 
-  // === LÓGICA DE PREÇOS (VOCÊ + 1 AMIGO) ===
+ // === LÓGICA DE PREÇOS (VOCÊ + 1 AMIGO) ===
   const calcularValorIngressos = (qtd: number) => {
     const pares = Math.floor(qtd / 2); 
     const avulsos = qtd % 2;           
-    return (pares * 3) + (avulsos * 50);
+    return (pares * 90) + (avulsos * 50); // ✅ CORRIGIDO
   };
-
   const formatarMoeda = (valor: number) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const [qrCodePix, setQrCodePix] = useState(''); 
