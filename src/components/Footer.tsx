@@ -1,5 +1,5 @@
 // src/components/Footer.tsx
-import React from 'react';
+
 import { Users, Instagram, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 

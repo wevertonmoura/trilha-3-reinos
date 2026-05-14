@@ -1,5 +1,5 @@
 // src/components/EventInfo.tsx
-import React from 'react';
+
 import { Calendar, MapPin, Trophy, Clock, Mountain, Droplets, Info, Trash2, ShieldCheck, Waves, Maximize2, Ticket, VolumeX, QrCode, Coffee } from 'lucide-react';
 import { motion } from 'framer-motion';
 
