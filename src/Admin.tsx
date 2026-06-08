@@ -58,7 +58,6 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
     }
   };
 
-  // === FUNÇÃO DE EXCLUSÃO ===
   const excluirParticipante = async (id: string, nome: string) => {
     if (!window.confirm(`Tem certeza que deseja EXCLUIR permanentemente a inscrição de ${nome}?`)) return;
 
@@ -83,7 +82,6 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
     }
   };
 
-  // === MENSAGEM DO WHATSAPP ATUALIZADA ===
   const chamarNoWhatsApp = (telefone: string, nome: string, pago: boolean) => {
     let numeroFormatado = (telefone || '').replace(/\D/g, ''); 
     
@@ -93,28 +91,25 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
 
     const primeiroNome = (nome || '').split(' ')[0]; 
     
-    // Procura se essa pessoa comprou para mais alguém (mesmo telefone, nome diferente)
     const acompanhantes = adminData.filter(p => p.telefone === telefone && p.nome !== nome && p.pago === true);
     const nomesAcompanhantes = acompanhantes.map(a => a.nome.split(' ')[0]).join(', ');
     
-    // Monta o texto de confirmação
-    let textoConfirmado = `Fala ${primeiroNome}! Aqui é da organização da Vem Para Trilha. Passando para avisar que a sua compra foi CONFIRMADA com sucesso! ✅\n\nQueria te pedir um favor: manda aqui uma foto sua e o seu @ do Instagram para a gente ir conhecendo a galera.\n\n`;
+    // TEXTO ATUALIZADO PARA O DIA 14/06
+    let textoConfirmado = `Fala ${primeiroNome}! Aqui é da organização do Vem Para Trilha. Passando para avisar que a sua compra para a Cachoeira do Brennand foi CONFIRMADA com sucesso! ✅\n\nA nossa trilha já é dia 14/06! 🔥\n\n`;
     
     if (acompanhantes.length > 0) {
-      textoConfirmado += `Como você também garantiu a vaga do pessoal (${nomesAcompanhantes}), manda a foto e o @ deles aqui também, por favor!\n\n`;
+      textoConfirmado += `Como você também garantiu a vaga do pessoal (${nomesAcompanhantes}), por favor, encaminhe este link para eles também.\n\n`;
     }
     
-    textoConfirmado += `Ah, só pra avisar: em breve vamos criar um grupo oficial no WhatsApp com toda a galera que vai participar da trilha para passar os últimos detalhes, beleza? Nos vemos lá! 🌿🏕️`;
+    textoConfirmado += `⚠️ AVISO IMPORTANTE: A trilha é exclusiva para inscritos e faremos uma chamada detalhada no local. Não será permitida a entrada de penetras! Estamos divulgando o ponto de encontro e todas as instruções oficiais apenas pelo nosso grupo do WhatsApp.\n\n👉 Entre no grupo agora para acompanhar os detalhes: https://chat.whatsapp.com/EX5BV94TEvGDpaude0hl4v\n\nNos vemos lá! 🌿🏕️`;
 
-    // Se estiver pendente, manda mensagem de cobrança/ajuda
-    const textoPendente = `Fala ${primeiroNome}! Aqui é da organização da Vem Para Trilha. Vi que você iniciou sua inscrição, mas o pagamento ainda não constou pra gente. Precisa de alguma ajuda com o PIX?`;
+    const textoPendente = `Fala ${primeiroNome}! Aqui é da organização do Vem Para Trilha. O dia da nossa trilha tá chegando (14/06)! 🔥 Vi que você iniciou sua inscrição, mas o pagamento ainda não constou pra gente. Precisa de alguma ajuda com o PIX?`;
 
     const mensagem = pago ? encodeURIComponent(textoConfirmado) : encodeURIComponent(textoPendente);
     
     window.open(`https://wa.me/${numeroFormatado}?text=${mensagem}`, '_blank');
   };
 
-  // === PLANILHA DE EMERGÊNCIA ===
   const exportarPlanilha = () => {
     const pessoasConfirmadas = adminData.filter(p => p.pago === true);
     const headers = ["Nome Completo", "Contato de Emergência"];
@@ -137,16 +132,13 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
     document.body.removeChild(link);
   };
 
-  // === CÁLCULOS (CORRIGIDO PARA REGRA DA CASADINHA) ===
   const totalPagos = adminData.filter(p => p.pago).length;
   const totalPendentes = adminData.length - totalPagos;
   
-  // Nova lógica de agrupamento (R$ 90 o par e R$ 50 o avulso)
   const pares = Math.floor(totalPagos / 2);
   const avulsos = totalPagos % 2;
   const arrecadado = (pares * 90) + (avulsos * 50); 
 
-  // === TRAVA DE SEGURANÇA NA BUSCA ===
   const dadosFiltrados = adminData.filter(p => 
     (p.nome || '').toLowerCase().includes(busca.toLowerCase()) || 
     (p.telefone || '').includes(busca)
@@ -174,7 +166,7 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white uppercase italic tracking-tighter">Comando Central</h1>
-              <p className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">Vem Para Trilha • Edição 3 Reinos</p>
+              <p className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">Vem Para Trilha • Cachoeira do Brennand</p>
             </div>
           </div>
           <button onClick={fecharAdmin} className="w-full md:w-auto bg-zinc-800/80 hover:bg-zinc-700 text-white px-6 py-4 rounded-xl flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-widest transition-all border border-zinc-700 shadow-lg group">
@@ -272,8 +264,6 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
                     </td>
                     <td className="p-6 text-right">
                       <div className="flex items-center justify-end gap-3">
-                        
-                        {/* TAG PAGO/PENDENTE */}
                         {p.pago ? (
                           <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
@@ -287,34 +277,15 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
                         )}
 
                         <div className="flex gap-2 ml-2">
-                          {/* BOTÃO APROVAR MANUAL */}
                           {!p.pago && (
-                            <button 
-                              onClick={() => aprovarPagamentoManual(p.id)}
-                              disabled={aprovandoId === p.id}
-                              className="bg-zinc-800 hover:bg-emerald-600 hover:text-white text-zinc-400 p-2 rounded-xl transition-colors border border-zinc-700 hover:border-emerald-500 flex items-center justify-center"
-                              title="Aprovar Pagamento Manualmente"
-                            >
+                            <button onClick={() => aprovarPagamentoManual(p.id)} disabled={aprovandoId === p.id} className="bg-zinc-800 hover:bg-emerald-600 hover:text-white text-zinc-400 p-2 rounded-xl transition-colors border border-zinc-700 hover:border-emerald-500 flex items-center justify-center" title="Aprovar Pagamento Manualmente">
                               {aprovandoId === p.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                             </button>
                           )}
-
-                          {/* BOTÃO WHATSAPP */}
-                          <button 
-                            onClick={() => chamarNoWhatsApp(p.telefone, p.nome, p.pago)}
-                            className="bg-zinc-800 hover:bg-[#25D366] hover:text-white text-zinc-400 p-2 rounded-xl transition-colors border border-zinc-700 hover:border-[#25D366] flex items-center justify-center"
-                            title="Enviar WhatsApp"
-                          >
+                          <button onClick={() => chamarNoWhatsApp(p.telefone, p.nome, p.pago)} className="bg-zinc-800 hover:bg-[#25D366] hover:text-white text-zinc-400 p-2 rounded-xl transition-colors border border-zinc-700 hover:border-[#25D366] flex items-center justify-center" title="Enviar WhatsApp">
                             <MessageCircle size={16} />
                           </button>
-
-                          {/* BOTÃO EXCLUIR */}
-                          <button 
-                            onClick={() => excluirParticipante(p.id, p.nome)}
-                            disabled={excluindoId === p.id}
-                            className="bg-zinc-800 hover:bg-red-600 hover:text-white text-zinc-400 p-2 rounded-xl transition-colors border border-zinc-700 hover:border-red-500 flex items-center justify-center"
-                            title="Excluir Participante"
-                          >
+                          <button onClick={() => excluirParticipante(p.id, p.nome)} disabled={excluindoId === p.id} className="bg-zinc-800 hover:bg-red-600 hover:text-white text-zinc-400 p-2 rounded-xl transition-colors border border-zinc-700 hover:border-red-500 flex items-center justify-center" title="Excluir Participante">
                             {excluindoId === p.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                           </button>
                         </div>
