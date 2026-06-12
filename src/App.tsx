@@ -22,7 +22,7 @@ const Trilha3Reinos = () => {
   const [senhaAdmin, setSenhaAdmin] = useState('');
   const [erroLoginAdmin, setErroLoginAdmin] = useState('');
 
-  const LIMITE_VAGAS = 64;
+  const LIMITE_VAGAS = 60;
   const [vagasOcupadas, setVagasOcupadas] = useState(0);
   const [verificandoVagas, setVerificandoVagas] = useState(true);
   const [listaEsperaNome, setListaEsperaNome] = useState('');
