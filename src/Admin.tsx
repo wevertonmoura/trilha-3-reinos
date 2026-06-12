@@ -91,7 +91,9 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
 
     const primeiroNome = (nome || '').split(' ')[0]; 
     
-    // TEXTO ATUALIZADO SEM A FRASE DE CONFIRMAÇÃO
+    const acompanhantes = adminData.filter(p => p.telefone === telefone && p.nome !== nome && p.pago === true);
+    const nomesAcompanhantes = acompanhantes.map(a => a.nome.split(' ')[0]).join(', ');
+    
     let textoConfirmado = `Fala, ${primeiroNome}! Aqui é da organização do Vem Para Trilha.\n\nA nossa aventura na trilha do Santuário dos Três Reinos já é agora, no dia 14/06! 🌿⛰️\n\nPara ficar por dentro de tudo, venha para o nosso Grupo Oficial do WhatsApp. É exclusivamente por lá que vamos divulgar o nosso ponto de encontro e todas as instruções finais!\n\n⚠️ AVISO MUITO IMPORTANTE:\nFaremos uma chamada rigorosa pela lista de inscritos. Como o Santuário é uma propriedade privada com controle de acesso, não será permitida a entrada de penetras (pessoas sem inscrição) sob nenhuma hipótese. Por favor, não levem pessoas a mais para evitarmos constrangimentos no dia, beleza?\n\n👉 Clique no link abaixo e entre no grupo oficial:\nhttps://chat.whatsapp.com/EX5BV94TEvGDpaude0hl4v\n\n(Se você comprou o ingresso da Casadinha, mande esse link para o seu acompanhante entrar também!)\n\nBora simbora lavar a alma! Nos vemos lá! 💦🔥`;
 
     const textoPendente = `Fala ${primeiroNome}! Aqui é da organização do Vem Para Trilha. O dia da nossa trilha no Santuário dos Três Reinos tá chegando (14/06)! 🔥 Vi que você iniciou sua inscrição, mas o pagamento ainda não constou pra gente. Precisa de alguma ajuda com o PIX?`;
@@ -102,7 +104,11 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
   };
 
   const exportarPlanilha = () => {
-    const pessoasConfirmadas = adminData.filter(p => p.pago === true);
+    // Ordena alfabeticamente para o download
+    const pessoasConfirmadas = adminData
+      .filter(p => p.pago === true)
+      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+      
     const headers = ["Nome Completo", "Contato de Emergência"];
     
     const csvRows = pessoasConfirmadas.map(p => {
@@ -130,10 +136,13 @@ const Admin = ({ senha, formatarMoeda, fecharAdmin }: any) => {
   const avulsos = totalPagos % 2;
   const arrecadado = (pares * 90) + (avulsos * 50); 
 
-  const dadosFiltrados = adminData.filter(p => 
-    (p.nome || '').toLowerCase().includes(busca.toLowerCase()) || 
-    (p.telefone || '').includes(busca)
-  );
+  // Ordena alfabeticamente para a visualização na tela
+  const dadosFiltrados = adminData
+    .filter(p => 
+      (p.nome || '').toLowerCase().includes(busca.toLowerCase()) || 
+      (p.telefone || '').includes(busca)
+    )
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
 
   if (loading) return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 relative overflow-hidden">
