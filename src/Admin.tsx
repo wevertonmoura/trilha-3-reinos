@@ -1,5 +1,5 @@
 // src/pages/Admin/Panel.tsx (ou Admin.tsx)
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Loader2, Search, ShieldAlert, Download, Users, ListFilter } from 'lucide-react';
 
 import AdminStats from './pages/Admin/AdminStats';
