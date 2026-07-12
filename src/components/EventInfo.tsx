@@ -50,7 +50,7 @@ export default function EventInfo({ images, setSelectedImg }: EventInfoProps) {
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
         <div className="col-span-full"><h2 className="text-2xl font-black uppercase italic mb-6 border-b border-zinc-900 pb-2 text-zinc-500">Sobre o evento</h2></div>
-        <InfoRow icon={<Calendar />} title="Data" text="14 de Junho de 2026" />
+        <InfoRow icon={<Calendar />} title="Data" text="23 de agosto de 2026" />
         <InfoRow icon={<Clock />} title="Horário" text="07:00 às 12:00" />
         <a href="https://www.google.com/maps/place/?q=place_id:ChIJ4-tYpb8RqwcRxSQFPEP7it4" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><InfoRow icon={<MapPin className="text-emerald-500" />} title="Localização" text="Guabiraba, Recife - PE" /></a>
         <InfoRow icon={<Trophy />} title="Investimento" text="R$ 55 Individual | R$ 100 (Você + 1 Amigo)" />
