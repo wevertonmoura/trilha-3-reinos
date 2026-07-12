@@ -36,7 +36,7 @@ const Inscricao: React.FC<InscricaoProps> = ({
   const calcularValorIngressos = (qtd: number) => {
     const pares = Math.floor(qtd / 2);
     const avulsos = qtd % 2;
-    return (pares * 90) + (avulsos * 50);
+    return (pares * 100) + (avulsos * 55);
   };
 
   const removeParticipant = (index: number) => {
@@ -216,7 +216,7 @@ const Inscricao: React.FC<InscricaoProps> = ({
     <>
       <div className="text-center mb-10 relative">
         <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white">INSCRIÇÃO</h2>
-        <p className="text-emerald-500 text-sm font-bold mt-2 tracking-widest">R$ 50 INDIVIDUAL | R$ 90 VOCÊ + 1 AMIGO</p>
+        <p className="text-emerald-500 text-sm font-bold mt-2 tracking-widest">R$ 55 INDIVIDUAL | R$ 100 VOCÊ + 1 AMIGO</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
