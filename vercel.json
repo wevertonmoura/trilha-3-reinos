@@ -1,7 +1,24 @@
 {
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-Requested-With, Content-Type, Authorization, X-Idempotency-Key" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/((?!api/|assets/.*).*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -20,14 +37,22 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api/.*).*)",
       "destination": "/"
     }
   ],
+  "functions": {
+    "api/recuperar-carrinho.js": {
+      "maxDuration": 10
+    },
+    "api/webhook.js": {
+      "maxDuration": 10
+    }
+  },
   "crons": [
     {
       "path": "/api/recuperar-carrinho",
-      "schedule": "0 0 * * *"
+      "schedule": "*/30 * * * *"
     }
   ]
 }

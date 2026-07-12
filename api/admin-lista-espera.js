@@ -1,29 +1,28 @@
-// api/admin-lista-espera.js
-import { sql } from '@vercel/postgres'; // Ou o banco de dados que você está usando (Supabase, Firebase, etc)
+import { createClient } from '@supabase/supabase-js';
+const supabase = createClient('https://revyeudqlndidaiprabc.supabase.co', process.env.SUPABASE_SERVICE_KEY);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método não permitido' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método inválido' });
 
   const { senha } = req.body;
-
-  // Validação simples da senha do cofre
-  if (senha !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'Acesso negado. Senha incorreta.' });
+  // Lembre-se de remover o VITE_ por segurança:
+  if (senha !== process.env.VITE_SENHA_ADMIN && senha !== process.env.SENHA_ADMIN) {
+    return res.status(401).json({ error: 'Acesso negado' });
   }
 
-  try {
-    // Busca os cadastrados na tabela de lista de espera, ordenando pelos mais recentes
-    const { rows } = await sql`
-      SELECT id, nome, telefone, created_at 
-      FROM lista_espera 
-      ORDER BY created_at DESC;
-    `;
+  // Busca os dados no Supabase e ordena pelos mais recentes
+  const { data, error } = await supabase
+    .from('lista_espera')
+    .select('id, nome, telefone, criado_em')
+    .order('criado_em', { ascending: false });
 
-    return res.status(200).json(rows);
-  } catch (error) {
-    console.error('Erro ao buscar lista de espera:', error);
-    return res.status(500).json({ error: 'Erro interno ao buscar dados da lista de espera.' });
-  }
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Mapeia o campo 'criado_em' para 'created_at' para o React ler perfeitamente
+  const dadosFormatados = (data || []).map(item => ({
+    ...item,
+    created_at: item.criado_em
+  }));
+
+  return res.status(200).json(dadosFormatados);
 }

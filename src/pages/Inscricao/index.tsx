@@ -67,14 +67,33 @@ const Inscricao: React.FC<InscricaoProps> = ({
     setParticipants(newParticipants);
   };
 
-  const handleListaEspera = (e: React.FormEvent) => {
+  // ✅ FUNÇÃO ATUALIZADA: Salva silenciosamente no banco em vez de abrir o WhatsApp
+  const handleListaEspera = async (e: React.FormEvent) => {
     e.preventDefault();
     if (listaEsperaNome.trim().length < 3 || listaEsperaFone.length < 14) {
-      alert("Preencha seus dados corretamente!"); return;
+      alert("Preencha seus dados corretamente!"); 
+      return;
     }
-    const msg = `🚀 *LISTA VIP - TRILHA 3 REINOS* 🚀%0A%0A*Nome:* ${listaEsperaNome}%0A*WhatsApp:* ${listaEsperaFone}%0A%0AOlá! Vi que as vagas esgotaram. Gostaria de entrar na lista de espera caso alguém desista!`;
-    window.open(`https://wa.me/5581994350798?text=${msg}`, '_blank');
-    setEntrouLista(true);
+
+    try {
+      const res = await fetch('/api/salvar-lista-espera', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: listaEsperaNome,
+          telefone: listaEsperaFone
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("Não foi possível salvar na lista de espera.");
+      }
+
+      setEntrouLista(true);
+    } catch (err) {
+      console.error(err);
+      alert("Ocorreu um erro ao entrar na lista VIP. Tente novamente em alguns instantes!");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
