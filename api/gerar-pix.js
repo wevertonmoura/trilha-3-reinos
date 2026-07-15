@@ -43,6 +43,26 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'CPF do titular com formato inválido para o Mercado Pago.' });
     }
 
+    // ============================================================================
+    // 🛡️ REGRA DE NEGÓCIO: LIMPEZA DE CADASTROS PENDENTES REPETIDOS DO MESMO CPF
+    // ============================================================================
+    console.log(`[VERIFICAÇÃO] Checando se o CPF ${cpfTitular} já tem inscrições pendentes antigas...`);
+    
+    // Deleta qualquer inscrição PENDENTE (pago = false) vinculada a esse mesmo CPF
+    // Nota: As que já estão PAGAS (pago = true) ficam intocadas em segurança!
+    const { error: erroLimpeza } = await supabase
+      .from('inscricao_trilha')
+      .delete()
+      .eq('cpf', cpfTitular)
+      .eq('pago', false);
+
+    if (erroLimpeza) {
+      console.warn(`[AVISO] Não foi possível limpar pendências antigas do CPF ${cpfTitular}:`, erroLimpeza.message);
+    } else {
+      console.log(`[LIMPEZA CONCLUÍDA] Tentativas pendentes antigas do CPF ${cpfTitular} foram removidas para dar lugar à mais recente.`);
+    }
+    // ============================================================================
+
     // Descobre o domínio automaticamente para o Webhook
     const hostAtual = req.headers['x-forwarded-host'] || req.headers['host'] || 'vemparatrilha.vercel.app';
     const protocolo = hostAtual.includes('localhost') ? 'http' : 'https';
@@ -65,7 +85,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         transaction_amount: Number(valorTotal),
         description: `Inscrição Trilha - ${titular.name}`,
-        payment_method_id: 'pix', // 🚫 FORÇA SER APENAS PIX (Sem cartão ou redirecionamento!)
+        payment_method_id: 'pix',
         payer: {
           email: emailLimpo,
           first_name: firstName,
@@ -85,11 +105,10 @@ export default async function handler(req, res) {
       return res.status(response.status || 400).json({ error: 'Não foi possível gerar o PIX.', details: msgErro });
     }
 
-    // Como é PIX puro, o ID é 100% numérico!
     const idDoPagamento = mpData.id.toString();
-    console.log(`[PIX SUCESSO] ID gerado: ${idDoPagamento}. Gravando no Supabase...`);
+    console.log(`[PIX SUCESSO] ID gerado: ${idDoPagamento}. Gravando nova tentativa no Supabase...`);
 
-    // === 2. SALVAMOS NO BANCO COM O PAYMENT_ID DO PIX ===
+    // === 2. SALVAMOS A TENTATIVA MAIS RECENTE NO BANCO ===
     const dadosParaSalvar = participantes.map((p, index) => {
       const cpfLimpo = p.cpf ? String(p.cpf).replace(/\D/g, '') : null;
       const telefoneLimpo = p.phone ? String(p.phone).replace(/\D/g, '') : telefoneTitular;
@@ -114,7 +133,6 @@ export default async function handler(req, res) {
 
     console.log(`[BANCO SUCESSO] ${dadosParaSalvar.length} participante(s) gravado(s)! Devolvendo QR Code para a tela...`);
 
-    // Devolve os dados com a imagem Base64 e o Copia e Cola para o seu modal!
     return res.status(200).json(mpData);
 
   } catch (error) {
