@@ -1,6 +1,6 @@
 // src/pages/Inscricao/index.tsx
 import React, { useState } from 'react';
-import { Loader2, Hourglass, CheckCircle, Trash2, Plus, AlertCircle, ChevronRight, CreditCard, QrCode } from 'lucide-react';
+import { Loader2, Hourglass, CheckCircle, Trash2, Plus, AlertCircle, ChevronRight, QrCode } from 'lucide-react';
 import type { Participante, DadosPix } from '../../types';
 import { api } from '../../services/api';
 import { validarCPF, formatarMoeda } from '../../utils/helpers';
@@ -67,7 +67,6 @@ const Inscricao: React.FC<InscricaoProps> = ({
     setParticipants(newParticipants);
   };
 
-  // Salva silenciosamente no banco na Lista VIP
   const handleListaEspera = async (e: React.FormEvent) => {
     e.preventDefault();
     if (listaEsperaNome.trim().length < 3 || listaEsperaFone.length < 14) {
@@ -130,7 +129,7 @@ const Inscricao: React.FC<InscricaoProps> = ({
       const mainEmail = participants[0].email;
       const valorTotal = Number((calcularValorIngressos(participants.length) + taxaPix).toFixed(2));
 
-      // 1. Chama a API atualizada (que agora gera o link do Checkout Pro aceitando PIX e Cartão)
+      // 1. Chama a API para gerar exclusivamente o PIX Direto
       const mpData = await api.gerarPix({
         participantes: participants,
         valorTotal: valorTotal,
@@ -138,14 +137,8 @@ const Inscricao: React.FC<InscricaoProps> = ({
         contatoEmergencia: mainEmergency
       });
 
-      // 2. 🚀 REDIRECIONAMENTO INTELIGENTE (Checkout Pro vs. PIX Direto)
-      if (mpData.url_pagamento) {
-        // Se o servidor devolveu o link do Checkout Pro (PIX + Cartão em até 12x), redireciona na hora!
-        window.location.href = mpData.url_pagamento;
-        return;
-      } 
-      else if (mpData.point_of_interaction?.transaction_data) {
-        // Fallback defensivo: se por acaso for usado o modo antigo de PIX direto, mantém compatibilidade
+      // 2. 🚀 EXIBE O QR CODE E O PIX COPIA E COLA DIRETO NA SUA TELA (SEM REDIRECIONAR)
+      if (mpData.point_of_interaction?.transaction_data) {
         onPixGerado({
           qrCodePix: mpData.point_of_interaction.transaction_data.qr_code,
           qrCodeImg: mpData.point_of_interaction.transaction_data.qr_code_base64,
@@ -154,11 +147,11 @@ const Inscricao: React.FC<InscricaoProps> = ({
           emailPrincipal: mainEmail
         }, participants);
       } else {
-        throw new Error("Erro ao gerar a sessão de pagamento. Verifique as credenciais no servidor.");
+        throw new Error("Não foi possível gerar o QR Code do PIX. Tente novamente.");
       }
     } catch (err: any) {
       console.error("Erro no checkout:", err);
-      setErrorMsg(err.message || "Erro de conexão ao gerar pagamento. Tente novamente.");
+      setErrorMsg(err.message || "Erro de conexão ao gerar o PIX. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -219,18 +212,17 @@ const Inscricao: React.FC<InscricaoProps> = ({
     );
   }
 
-  // ESTADO 3: FORMULÁRIO NORMAL DE COMPRA
+  // ESTADO 3: FORMULÁRIO NORMAL DE COMPRA (100% focado no PIX)
   return (
     <>
       <div className="text-center mb-10 relative">
         <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white">INSCRIÇÃO</h2>
         <p className="text-emerald-500 text-sm font-bold mt-2 tracking-widest">R$ 55 INDIVIDUAL | R$ 100 VOCÊ + 1 AMIGO</p>
         
-        {/* Adicionado selo de meios de pagamento para passar mais confiança */}
-        <div className="flex items-center justify-center gap-4 mt-3 text-zinc-400 text-[11px] font-bold uppercase tracking-wider">
-          <span className="flex items-center gap-1"><QrCode size={14} className="text-emerald-500" /> PIX Imediato</span>
-          <span className="text-zinc-600">•</span>
-          <span className="flex items-center gap-1"><CreditCard size={14} className="text-emerald-500" /> Cartão em até 12x</span>
+        {/* Selo limpo apenas com PIX */}
+        <div className="flex items-center justify-center gap-2 mt-3 text-emerald-400 text-[11px] font-bold uppercase tracking-wider">
+          <QrCode size={16} />
+          <span>Pagamento Instantâneo via PIX (Sem taxas extras)</span>
         </div>
       </div>
 
@@ -303,10 +295,10 @@ const Inscricao: React.FC<InscricaoProps> = ({
           {loading ? (
             <div className="flex items-center gap-2">
               <Loader2 className="animate-spin" />
-              <span>Redirecionando para o Mercado Pago...</span>
+              <span>Gerando QR Code do PIX...</span>
             </div>
           ) : (
-            <>Ir para o Pagamento (R$ {formatarMoeda(calcularValorIngressos(participants.length) + taxaPix)}) <ChevronRight size={20} /></>
+            <>Gerar PIX e Pagar (R$ {formatarMoeda(calcularValorIngressos(participants.length) + taxaPix)}) <ChevronRight size={20} /></>
           )}
         </button>
       </form>
