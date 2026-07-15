@@ -1,6 +1,6 @@
 // src/pages/Admin/Panel.tsx
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, Search, RefreshCw, LogOut, Download, CheckCircle, Clock, ShieldAlert, Phone, Mail, FileText, Trash2, Check, MessageCircle, Loader2, Pencil, X, Save } from 'lucide-react';
+import { Users, DollarSign, Search, RefreshCw, LogOut, Download, CheckCircle, Clock, ShieldAlert, Phone, Mail, FileText, Trash2, Check, MessageCircle, Loader2, Pencil, X, Save, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Participante } from '../../types';
 
@@ -16,6 +16,7 @@ interface InscricaoAdmin extends Participante {
   valor?: number;
   data?: string;
   tipo?: 'Titular' | 'Acompanhante';
+  dataRegistro?: string; // 🚀 Adicionado para receber a data do banco
 }
 
 const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin }) => {
@@ -25,14 +26,26 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'pago' | 'pendente'>('todos');
   const [erro, setErro] = useState('');
 
-  // Estados para mostrar o "girando" (loading) só no botão que está sendo clicado
   const [processandoId, setProcessandoId] = useState<string | number | null>(null);
 
-  // 🚀 ESTADO DO MODAL DE EDIÇÃO
+  // ESTADO DO MODAL DE EDIÇÃO
   const [itemEditando, setItemEditando] = useState<InscricaoAdmin | null>(null);
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
-  // 1. CARREGAR DADOS (Mantém o admin-listar)
+  // Função auxiliar para formatar a data e hora
+  const formatarDataHora = (dataIso?: string) => {
+    if (!dataIso) return 'Data não registrada';
+    const d = new Date(dataIso);
+    if (isNaN(d.getTime())) return 'Data inválida';
+    return `${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  // Função auxiliar para limpar R$ duplo
+  const limparR$ = (valorFormatado: string) => {
+    return valorFormatado.replace(/R\$\s?/g, '').trim();
+  };
+
+  // 1. CARREGAR DADOS
   const carregarInscricoes = async () => {
     setLoading(true);
     setErro('');
@@ -63,7 +76,9 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
           emergencyPhone: item.emergencyPhone || partesEm[1]?.trim() || '---',
           status: (item.status === 'pago' || item.pago === true) ? 'pago' : 'pendente',
           valor: Number(item.valor || 55),
-          tipo: item.cpf ? 'Titular' : 'Acompanhante'
+          tipo: item.cpf ? 'Titular' : 'Acompanhante',
+          // 🚀 Puxando a data de criação direto do banco (created_at ou criado_em)
+          dataRegistro: item.created_at || item.criado_em || item.data || new Date().toISOString()
         };
       });
 
@@ -80,7 +95,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     carregarInscricoes();
   }, []);
 
-  // 2. ✏️ SALVAR EDIÇÃO DO PARTICIPANTE (Apontando para admin-acao)
+  // 2. SALVAR EDIÇÃO
   const salvarEdicao = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemEditando || !itemEditando.id) return;
@@ -89,7 +104,6 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     try {
       const contatoSosCompleto = `${itemEditando.emergencyName || ''} - ${itemEditando.emergencyPhone || ''}`.trim();
 
-      // 🔥 CORREÇÃO: Usando a rota unificada e enviando a ação 'editar'
       const res = await fetch('/api/admin-acao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -111,7 +125,6 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
         throw new Error(errData.error || 'Falha ao salvar no servidor.');
       }
 
-      // Atualiza a lista na tela em tempo real sem recarregar
       setInscricoes(prev => prev.map(item => item.id === itemEditando.id ? itemEditando : item));
       setItemEditando(null);
       alert('Dados atualizados com sucesso!');
@@ -123,28 +136,21 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 3. 🗑️ FUNÇÃO DE EXCLUIR INSCRITO (Apontando para admin-acao)
+  // 3. EXCLUIR INSCRITO
   const excluirInscricao = async (id: string | number | undefined, nome: string) => {
     if (!id) return;
-    if (!window.confirm(`Tem certeza que deseja EXCLUIR a inscrição de "${nome}"? Esta ação não pode ser desfeita.`)) {
-      return;
-    }
+    if (!window.confirm(`Tem certeza que deseja EXCLUIR a inscrição de "${nome}"? Esta ação não pode ser desfeita.`)) return;
 
     setProcessandoId(id);
     try {
-      // 🔥 CORREÇÃO: Usando a rota unificada e enviando a ação 'excluir'
       const res = await fetch('/api/admin-acao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ acao: 'excluir', senha, id })
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Erro ao excluir no servidor.');
-      }
+      if (!res.ok) throw new Error('Erro ao excluir no servidor.');
 
-      // Remove da tela imediatamente sem precisar recarregar tudo
       setInscricoes(prev => prev.filter(item => item.id !== id));
       alert(`Inscrição de ${nome} excluída com sucesso!`);
     } catch (err: any) {
@@ -155,14 +161,13 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 4. ✅ FUNÇÃO DE APROVAR PAGAMENTO MANUAL (Apontando para admin-acao)
+  // 4. APROVAR PAGAMENTO MANUAL
   const aprovarInscricao = async (id: string | number | undefined, nome: string) => {
     if (!id) return;
     if (!window.confirm(`Confirmar o pagamento de "${nome}" manualmente?`)) return;
 
     setProcessandoId(id);
     try {
-      // 🔥 CORREÇÃO: Usando a rota unificada e enviando a ação 'aprovar'
       const res = await fetch('/api/admin-acao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -170,8 +175,6 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
       });
 
       if (!res.ok) throw new Error('Erro ao aprovar pagamento no servidor.');
-
-      // Atualiza o status na tela para verde na mesma hora
       setInscricoes(prev => prev.map(item => item.id === id ? { ...item, status: 'pago' } : item));
     } catch (err: any) {
       console.error(err);
@@ -181,7 +184,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 5. 💬 ABRIR WHATSAPP
+  // 5. ABRIR WHATSAPP
   const chamarWhatsApp = (telefone: string, nome: string, pago: boolean) => {
     const foneLimpo = telefone.replace(/\D/g, '');
     if (foneLimpo.length < 10) return alert("Número de WhatsApp inválido!");
@@ -209,10 +212,11 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
 
   const exportarCSV = () => {
     if (inscricoesFiltradas.length === 0) return alert("Nenhum dado para exportar!");
-    const cabecalho = "Tipo,Nome,CPF,WhatsApp,E-mail,Emergencia,Fone Emergencia,Status,Valor\n";
-    const linhas = inscricoesFiltradas.map(i => 
-      `"${i.tipo || 'Titular'}","${i.name}","${i.cpf}","${i.phone}","${i.email || ''}","${i.emergencyName || ''}","${i.emergencyPhone || ''}","${i.status || 'pendente'}","R$ ${i.valor || 55}"`
-    ).join("\n");
+    const cabecalho = "Data Cadastro,Tipo,Nome,CPF,WhatsApp,E-mail,Emergencia,Fone Emergencia,Status,Valor\n";
+    const linhas = inscricoesFiltradas.map(i => {
+      const dataFormatadaStr = new Date(i.dataRegistro || '').toLocaleString('pt-BR');
+      return `"${dataFormatadaStr}","${i.tipo || 'Titular'}","${i.name}","${i.cpf}","${i.phone}","${i.email || ''}","${i.emergencyName || ''}","${i.emergencyPhone || ''}","${i.status || 'pendente'}","R$ ${i.valor || 55}"`
+    }).join("\n");
 
     const blob = new Blob(["\uFEFF" + cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -265,7 +269,8 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
           <div className="bg-zinc-900/60 border border-zinc-800 p-6 rounded-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10"><DollarSign size={48} className="text-emerald-500" /></div>
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Receita (Confirmada)</p>
-            <p className="text-3xl font-black text-white mt-2 font-mono">R$ {formatarMoeda(receitaTotal)}</p>
+            {/* 🚀 CORREÇÃO DO R$ DUPLICADO AQUI */}
+            <p className="text-3xl font-black text-white mt-2 font-mono">R$ {limparR$(formatarMoeda(receitaTotal))}</p>
           </div>
           <div className="bg-zinc-900/60 border border-zinc-800 p-6 rounded-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10"><CheckCircle size={48} className="text-emerald-500" /></div>
@@ -299,7 +304,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
           </div>
         </div>
 
-        {/* ERRO DE COMUNICAÇÃO (SE HOUVER) */}
+        {/* ERRO DE COMUNICAÇÃO */}
         {erro && (
           <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-2xl text-xs font-bold flex items-center gap-3">
             <ShieldAlert size={20} className="shrink-0" />
@@ -307,7 +312,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
           </div>
         )}
 
-        {/* LISTA DE INSCRITOS (CARDS COM BOTÕES DE AÇÃO) */}
+        {/* LISTA DE INSCRITOS */}
         {loading ? (
           <div className="text-center py-20 opacity-50 space-y-4">
             <RefreshCw className="animate-spin text-emerald-500 mx-auto" size={32} />
@@ -343,6 +348,12 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
                       </span>
                       <h3 className="font-bold text-white text-base leading-snug">{item.name}</h3>
                       <p className="text-xs font-mono text-zinc-400 mt-0.5">{item.cpf}</p>
+                      
+                      {/* 🚀 NOVA DATA E HORA DE CADASTRO ABAIXO DO CPF */}
+                      <div className="flex items-center gap-1.5 mt-2 text-[9px] text-zinc-500 font-bold uppercase tracking-wider bg-zinc-950 inline-flex px-2 py-1 rounded-md border border-zinc-800">
+                        <CalendarDays size={10} className="text-emerald-500/70" />
+                        {formatarDataHora(item.dataRegistro)}
+                      </div>
                     </div>
 
                     <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shrink-0 flex items-center gap-1 ${
@@ -381,15 +392,16 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
                   </div>
                 </div>
 
-                {/* 🚀 BARRA DE BOTÕES DE AÇÃO COM O NOVO BOTÃO DE EDITAR */}
+                {/* BARRA DE BOTÕES DE AÇÃO */}
                 <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-col gap-3 pl-2">
                   <div className="flex justify-between items-center text-xs font-mono text-zinc-500">
-                    <span>Valor: R$ {formatarMoeda(item.valor || 55)}</span>
+                    {/* 🚀 CORREÇÃO DO R$ DUPLICADO AQUI TAMBÉM */}
+                    <span>Valor: R$ {limparR$(formatarMoeda(item.valor || 55))}</span>
                     <span>#{(idx + 1).toString().padStart(3, '0')}</span>
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-1">
-                    {/* ✏️ BOTÃO EDITAR */}
+                    {/* BOTÃO EDITAR */}
                     <button 
                       onClick={() => setItemEditando({ ...item })} 
                       className="bg-zinc-800 hover:bg-blue-600 text-zinc-400 hover:text-white p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-blue-500 flex items-center gap-1 text-[11px] font-bold"
@@ -407,7 +419,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
                       <MessageCircle size={15} />
                     </button>
 
-                    {/* Botão Aprovar Manual (Só aparece se estiver pendente) */}
+                    {/* Botão Aprovar Manual */}
                     {item.status !== 'pago' && (
                       <button 
                         onClick={() => aprovarInscricao(item.id, item.name)} 
@@ -439,9 +451,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
 
       </div>
 
-      {/* ============================================================================
-          ✏️ MODAL DE EDIÇÃO DE PARTICIPANTE
-          ============================================================================ */}
+      {/* MODAL DE EDIÇÃO DE PARTICIPANTE */}
       <AnimatePresence>
         {itemEditando && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-300">

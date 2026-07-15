@@ -222,7 +222,7 @@ const Inscricao: React.FC<InscricaoProps> = ({
         {/* Selo limpo apenas com PIX */}
         <div className="flex items-center justify-center gap-2 mt-3 text-emerald-400 text-[11px] font-bold uppercase tracking-wider">
           <QrCode size={16} />
-          <span>Pagamento Instantâneo via PIX (Sem taxas extras)</span>
+          
         </div>
       </div>
 
