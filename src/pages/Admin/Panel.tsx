@@ -11,7 +11,7 @@ interface AdminProps {
 }
 
 interface InscricaoAdmin extends Participante {
-  id?: string;
+  id?: string | number;
   status?: 'pago' | 'pendente';
   valor?: number;
   data?: string;
@@ -30,16 +30,44 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     setLoading(true);
     setErro('');
     try {
-      const res = await fetch('/api/admin/inscricoes', {
+      // 🚀 CORREÇÃO 1: Apontando para o arquivo correto na Vercel (/api/admin-listar)
+      const res = await fetch('/api/admin-listar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ senha })
       });
 
-      if (!res.ok) throw new Error('Falha ao carregar dados. Verifique a autenticação.');
+      if (res.status === 401) {
+        throw new Error('Senha incorreta ou acesso negado pelo servidor.');
+      }
+
+      if (!res.ok) {
+        throw new Error('Falha ao carregar dados. Verifique a conexão com a API.');
+      }
       
       const data = await res.json();
-      setInscricoes(data.inscricoes || data || []);
+      
+      // 🚀 CORREÇÃO 2: Adaptando o retorno do Supabase para os nomes que o seu visual React espera
+      const dadosTratados = (Array.isArray(data) ? data : data.inscricoes || []).map((item: any, ind: number) => {
+        const em = item.contato_emergencia || item.emergencyName || '';
+        const partesEm = em.includes('-') ? em.split('-') : [em, ''];
+        
+        return {
+          ...item,
+          id: item.id || ind,
+          name: item.name || item.nome || 'Trilheiro Sem Nome',
+          cpf: item.cpf || 'Acompanhante (Sem CPF)',
+          phone: item.phone || item.telefone || '---',
+          email: item.email || '',
+          emergencyName: partesEm[0].trim() || 'Não informado',
+          emergencyPhone: item.emergencyPhone || partesEm[1]?.trim() || '---',
+          status: (item.status === 'pago' || item.pago === true) ? 'pago' : 'pendente',
+          valor: Number(item.valor || 55), // 🚀 CORREÇÃO 3: Fallback de R$ 55
+          tipo: item.cpf ? 'Titular' : 'Acompanhante'
+        };
+      });
+
+      setInscricoes(dadosTratados);
     } catch (err: any) {
       console.error("Erro no painel:", err);
       setErro(err.message || "Erro de conexão com o servidor.");
@@ -58,14 +86,14 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
   const pagamentosPendentes = inscricoes.filter(i => i.status === 'pendente').length;
   const receitaTotal = inscricoes
     .filter(i => i.status === 'pago')
-    .reduce((acc, curr) => acc + (curr.valor || 50), 0);
+    .reduce((acc, curr) => acc + (curr.valor || 55), 0);
 
   // Filtragem da lista pela barra de busca e botões de status
   const inscricoesFiltradas = inscricoes.filter(item => {
     const atendeBusca = 
       item.name.toLowerCase().includes(busca.toLowerCase()) ||
-      item.cpf.includes(busca) ||
-      item.email?.toLowerCase().includes(busca.toLowerCase());
+      String(item.cpf).includes(busca) ||
+      (item.email && item.email.toLowerCase().includes(busca.toLowerCase()));
     
     const atendeStatus = 
       filtroStatus === 'todos' ? true : item.status === filtroStatus;
@@ -77,9 +105,9 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
   const exportarCSV = () => {
     if (inscricoesFiltradas.length === 0) return alert("Nenhum dado para exportar!");
     
-    const cabecalho = "Nome,CPF,WhatsApp,E-mail,Emergencia,Fone Emergencia,Status,Valor\n";
+    const cabecalho = "Tipo,Nome,CPF,WhatsApp,E-mail,Emergencia,Fone Emergencia,Status,Valor\n";
     const linhas = inscricoesFiltradas.map(i => 
-      `"${i.name}","${i.cpf}","${i.phone}","${i.email || ''}","${i.emergencyName || ''}","${i.emergencyPhone || ''}","${i.status || 'pendente'}","${i.valor || 0}"`
+      `"${i.tipo || 'Titular'}","${i.name}","${i.cpf}","${i.phone}","${i.email || ''}","${i.emergencyName || ''}","${i.emergencyPhone || ''}","${i.status || 'pendente'}","R$ ${i.valor || 55}"`
     ).join("\n");
 
     const blob = new Blob(["\uFEFF" + cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
@@ -282,7 +310,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-zinc-800/80 flex justify-between items-center pl-2 text-xs font-mono text-zinc-500">
-                  <span>Valor: R$ {formatarMoeda(item.valor || 50)}</span>
+                  <span>Valor: R$ {formatarMoeda(item.valor || 55)}</span>
                   <span>#{(idx + 1).toString().padStart(3, '0')}</span>
                 </div>
               </motion.div>
