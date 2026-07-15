@@ -25,7 +25,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'pago' | 'pendente'>('todos');
   const [erro, setErro] = useState('');
 
-  // Estado para loading dos botões individuais
+  // Estados para mostrar o "girando" (loading) só no botão que está sendo clicado
   const [processandoId, setProcessandoId] = useState<string | number | null>(null);
 
   // 🚀 ESTADO DO MODAL DE EDIÇÃO
@@ -109,7 +109,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
         throw new Error(errData.error || 'Falha ao salvar no servidor.');
       }
 
-      // Atualiza a lista na tela em tempo real sem precisar recarregar
+      // Atualiza a lista na tela em tempo real sem recarregar
       setInscricoes(prev => prev.map(item => item.id === itemEditando.id ? itemEditando : item));
       setItemEditando(null);
       alert('Dados atualizados com sucesso!');
@@ -121,10 +121,12 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 3. 🗑️ EXCLUIR INSCRITO
+  // 3. 🗑️ FUNÇÃO DE EXCLUIR INSCRITO
   const excluirInscricao = async (id: string | number | undefined, nome: string) => {
     if (!id) return;
-    if (!window.confirm(`Tem certeza que deseja EXCLUIR a inscrição de "${nome}"? Esta ação não pode ser desfeita.`)) return;
+    if (!window.confirm(`Tem certeza que deseja EXCLUIR a inscrição de "${nome}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
 
     setProcessandoId(id);
     try {
@@ -134,7 +136,11 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
         body: JSON.stringify({ senha, id })
       });
 
-      if (!res.ok) throw new Error('Erro ao excluir no servidor.');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao excluir no servidor.');
+      }
+
       setInscricoes(prev => prev.filter(item => item.id !== id));
       alert(`Inscrição de ${nome} excluída com sucesso!`);
     } catch (err: any) {
@@ -145,7 +151,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 4. ✅ APROVAR PAGAMENTO MANUAL
+  // 4. ✅ FUNÇÃO DE APROVAR PAGAMENTO MANUAL
   const aprovarInscricao = async (id: string | number | undefined, nome: string) => {
     if (!id) return;
     if (!window.confirm(`Confirmar o pagamento de "${nome}" manualmente?`)) return;
@@ -168,7 +174,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 5. 💬 WHATSAPP
+  // 5. 💬 ABRIR WHATSAPP
   const chamarWhatsApp = (telefone: string, nome: string, pago: boolean) => {
     const foneLimpo = telefone.replace(/\D/g, '');
     if (foneLimpo.length < 10) return alert("Número de WhatsApp inválido!");
