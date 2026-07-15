@@ -1,6 +1,6 @@
 // src/pages/Inscricao/index.tsx
 import React, { useState } from 'react';
-import { Loader2, Hourglass, CheckCircle, Trash2, Plus, AlertCircle, ChevronRight } from 'lucide-react';
+import { Loader2, Hourglass, CheckCircle, Trash2, Plus, AlertCircle, ChevronRight, CreditCard, QrCode } from 'lucide-react';
 import type { Participante, DadosPix } from '../../types';
 import { api } from '../../services/api';
 import { validarCPF, formatarMoeda } from '../../utils/helpers';
@@ -67,7 +67,7 @@ const Inscricao: React.FC<InscricaoProps> = ({
     setParticipants(newParticipants);
   };
 
-  // ✅ FUNÇÃO ATUALIZADA: Salva silenciosamente no banco em vez de abrir o WhatsApp
+  // Salva silenciosamente no banco na Lista VIP
   const handleListaEspera = async (e: React.FormEvent) => {
     e.preventDefault();
     if (listaEsperaNome.trim().length < 3 || listaEsperaFone.length < 14) {
@@ -130,6 +130,7 @@ const Inscricao: React.FC<InscricaoProps> = ({
       const mainEmail = participants[0].email;
       const valorTotal = Number((calcularValorIngressos(participants.length) + taxaPix).toFixed(2));
 
+      // 1. Chama a API atualizada (que agora gera o link do Checkout Pro aceitando PIX e Cartão)
       const mpData = await api.gerarPix({
         participantes: participants,
         valorTotal: valorTotal,
@@ -137,7 +138,14 @@ const Inscricao: React.FC<InscricaoProps> = ({
         contatoEmergencia: mainEmergency
       });
 
-      if (mpData.point_of_interaction?.transaction_data) {
+      // 2. 🚀 REDIRECIONAMENTO INTELIGENTE (Checkout Pro vs. PIX Direto)
+      if (mpData.url_pagamento) {
+        // Se o servidor devolveu o link do Checkout Pro (PIX + Cartão em até 12x), redireciona na hora!
+        window.location.href = mpData.url_pagamento;
+        return;
+      } 
+      else if (mpData.point_of_interaction?.transaction_data) {
+        // Fallback defensivo: se por acaso for usado o modo antigo de PIX direto, mantém compatibilidade
         onPixGerado({
           qrCodePix: mpData.point_of_interaction.transaction_data.qr_code,
           qrCodeImg: mpData.point_of_interaction.transaction_data.qr_code_base64,
@@ -146,11 +154,11 @@ const Inscricao: React.FC<InscricaoProps> = ({
           emailPrincipal: mainEmail
         }, participants);
       } else {
-        throw new Error("Erro ao gerar o PIX. Verifique a configuração.");
+        throw new Error("Erro ao gerar a sessão de pagamento. Verifique as credenciais no servidor.");
       }
     } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || "Erro de conexão. Tente novamente.");
+      console.error("Erro no checkout:", err);
+      setErrorMsg(err.message || "Erro de conexão ao gerar pagamento. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -217,6 +225,13 @@ const Inscricao: React.FC<InscricaoProps> = ({
       <div className="text-center mb-10 relative">
         <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white">INSCRIÇÃO</h2>
         <p className="text-emerald-500 text-sm font-bold mt-2 tracking-widest">R$ 55 INDIVIDUAL | R$ 100 VOCÊ + 1 AMIGO</p>
+        
+        {/* Adicionado selo de meios de pagamento para passar mais confiança */}
+        <div className="flex items-center justify-center gap-4 mt-3 text-zinc-400 text-[11px] font-bold uppercase tracking-wider">
+          <span className="flex items-center gap-1"><QrCode size={14} className="text-emerald-500" /> PIX Imediato</span>
+          <span className="text-zinc-600">•</span>
+          <span className="flex items-center gap-1"><CreditCard size={14} className="text-emerald-500" /> Cartão em até 12x</span>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -285,7 +300,14 @@ const Inscricao: React.FC<InscricaoProps> = ({
         {errorMsg && <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-[10px] font-bold flex items-center justify-center gap-2"><AlertCircle size={14} /> {errorMsg}</div>}
 
         <button disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-black py-5 rounded-2xl shadow-xl transition-all uppercase tracking-widest flex items-center justify-center gap-3 text-sm mt-4">
-          {loading ? <Loader2 className="animate-spin" /> : <>Finalizar Inscrição (R$ {formatarMoeda(calcularValorIngressos(participants.length) + taxaPix)}) <ChevronRight size={20} /></>}
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="animate-spin" />
+              <span>Redirecionando para o Mercado Pago...</span>
+            </div>
+          ) : (
+            <>Ir para o Pagamento (R$ {formatarMoeda(calcularValorIngressos(participants.length) + taxaPix)}) <ChevronRight size={20} /></>
+          )}
         </button>
       </form>
     </>

@@ -1,28 +1,44 @@
 import { createClient } from '@supabase/supabase-js';
-const supabase = createClient('https://revyeudqlndidaiprabc.supabase.co', process.env.SUPABASE_SERVICE_KEY);
+
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://revyeudqlndidaiprabc.supabase.co';
+const supabase = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_KEY || '');
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método inválido' });
 
   const { senha } = req.body;
-  // Lembre-se de remover o VITE_ por segurança:
-  if (senha !== process.env.VITE_SENHA_ADMIN && senha !== process.env.SENHA_ADMIN) {
-    return res.status(401).json({ error: 'Acesso negado' });
+  const senhaValida = process.env.SENHA_ADMIN || process.env.VITE_SENHA_ADMIN;
+
+  if (senha !== senhaValida) {
+    return res.status(401).json({ error: 'Acesso negado. Senha incorreta.' });
   }
 
-  // Busca os dados no Supabase e ordena pelos mais recentes
-  const { data, error } = await supabase
-    .from('lista_espera')
-    .select('id, nome, telefone, criado_em')
-    .order('criado_em', { ascending: false });
+  try {
+    // 🛡️ CORREÇÃO: Tabela lista_espera_trilha com ordenação por created_at
+    const { data, error } = await supabase
+      .from('lista_espera_trilha')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("[SUPABASE ERRO - LISTA ESPERA]:", error.message);
+      return res.status(500).json({ error: error.message });
+    }
 
-  // Mapeia o campo 'criado_em' para 'created_at' para o React ler perfeitamente
-  const dadosFormatados = (data || []).map(item => ({
-    ...item,
-    created_at: item.criado_em
-  }));
+    // Garante que o front-end ache a data independente do nome no banco
+    const dadosFormatados = (data || []).map(item => ({
+      ...item,
+      created_at: item.created_at || item.criado_em
+    }));
 
-  return res.status(200).json(dadosFormatados);
+    return res.status(200).json(dadosFormatados);
+  } catch (err) {
+    console.error("[ERRO FATAL BUSCA LISTA]:", err);
+    return res.status(500).json({ error: 'Erro interno ao buscar lista.' });
+  }
 }

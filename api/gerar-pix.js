@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
   const { participantes, valorTotal, emailPrincipal, contatoEmergencia } = req.body;
 
-  // 2. 🛡️ VALIDAÇÃO DEFENSIVA: Evita o crash do servidor se o front-end mandar dados vazios ou corrompidos
+  // 2. 🛡️ VALIDAÇÃO DEFENSIVA: Evita o crash do servidor se o front-end mandar dados vazios
   if (!participantes || !Array.isArray(participantes) || participantes.length === 0) {
     return res.status(400).json({ error: 'Lista de participantes inválida ou vazia.' });
   }
@@ -48,59 +48,78 @@ export default async function handler(req, res) {
     const cpfTitular = titular.cpf ? String(titular.cpf).replace(/\D/g, '') : '';
     const telefoneTitular = titular.phone ? String(titular.phone).replace(/\D/g, '') : '';
     
-    // URL de retorno automática do webhook (Pode ser alterada no Vercel via env)
-    const webhookUrl = process.env.MP_WEBHOOK_URL || 'https://trilha-3-reino.vercel.app/api/webhook';
-
     if (cpfTitular.length !== 11) {
       return res.status(400).json({ error: 'CPF do titular com formato inválido para o Mercado Pago.' });
     }
 
-    // === 1. PRIMEIRO: GERAMOS O PIX NO MERCADO PAGO ===
+    // 🛡️ CORREÇÃO INTELIGENTE DA URL: Descobre o domínio automaticamente para evitar Erro 400
+    const hostAtual = req.headers['x-forwarded-host'] || req.headers['host'] || 'vemparatrilha.vercel.app';
+    const protocolo = hostAtual.includes('localhost') ? 'http' : 'https';
+    const webhookUrl = process.env.MP_WEBHOOK_URL || `${protocolo}://${hostAtual}/api/webhook`;
+    const siteUrl = `${protocolo}://${hostAtual}`;
+
+    // ID único do pedido que ligará o Supabase ao Mercado Pago
+    const idPedido = `trilha-${Date.now()}-${cpfTitular.slice(-4)}`;
+
     const payerName = (titular.name || 'Participante Trilha').trim().split(" ");
     const firstName = payerName[0];
-    const lastName = payerName.length > 1 ? payerName.slice(1).join(" ") : "Invasores";
+    const lastName = payerName.length > 1 ? payerName.slice(1).join(" ") : "Trilheiro";
     
-    console.log(`[PIX] Gerando transação de R$ ${Number(valorTotal).toFixed(2)} para ${firstName} (${cpfTitular})...`);
+    console.log(`[CHECKOUT] Gerando pagamento (PIX/Cartão) de R$ ${Number(valorTotal).toFixed(2)} para ${firstName}...`);
 
-    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+    // === 1. CRIAMOS A PREFERÊNCIA DO CHECKOUT PRO NO MERCADO PAGO ===
+    const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-        'X-Idempotency-Key': `pix-${Date.now()}-${cpfTitular}` // Previne cobranças duplicadas se clicar 2x
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        transaction_amount: Number(valorTotal),
-        description: `Inscrição Trilha - ${titular.name}`,
-        payment_method_id: 'pix',
+        items: [
+          {
+            title: "Inscrição Trilha 3 Reinos",
+            description: `Ingresso(s) para ${participantes.length} participante(s) - 23 de Agosto`,
+            quantity: 1,
+            currency_id: "BRL",
+            unit_price: Number(valorTotal)
+          }
+        ],
         payer: {
+          name: firstName,
+          surname: lastName,
           email: emailLimpo,
-          first_name: firstName,
-          last_name: lastName,
           identification: { type: 'CPF', number: cpfTitular }
         },
-        external_reference: emailLimpo, 
-        notification_url: webhookUrl
+        // 🚫 O SEGREDO SÊNIOR: BLOQUEIA BOLETOS E LOTÉRICAS, LIBERA SÓ PIX E CARTÃO!
+        payment_methods: {
+          excluded_payment_types: [
+            { id: "ticket" }, // Bloqueia Boleto Bancário
+            { id: "atm" }     // Bloqueia Pagamento em Lotérica/Caixa Eletrônico
+          ],
+          installments: 12    // Libera parcelamento no Cartão de Crédito em até 12x
+        },
+        external_reference: idPedido, 
+        notification_url: webhookUrl,
+        back_urls: {
+          success: `${siteUrl}/?status=sucesso`,
+          failure: `${siteUrl}/?status=erro`,
+          pending: `${siteUrl}/?status=pendente`
+        },
+        auto_return: "approved"
       })
     });
 
     const mpData = await response.json();
 
-    // Tratamento robusto de erros da API do Mercado Pago
     if (!response.ok || !mpData.id) {
-      const msgErro = mpData.message || mpData.error || (mpData.cause && mpData.cause[0]?.description) || 'Falha desconhecida no provedor de pagamento.';
-      console.error("[PIX ERRO]", JSON.stringify(mpData));
-      
-      return res.status(response.status || 400).json({ 
-        error: 'Não foi possível gerar o PIX no Mercado Pago.', 
-        details: msgErro 
-      });
+      const msgErro = mpData.message || mpData.error || 'Falha ao gerar o Checkout no Mercado Pago.';
+      console.error("[MP ERRO]", JSON.stringify(mpData));
+      return res.status(response.status || 400).json({ error: 'Erro no provedor de pagamento.', details: msgErro });
     }
 
-    const idDoPagamento = mpData.id.toString();
-    console.log(`[PIX SUCESSO] ID gerado: ${idDoPagamento}. Gravando no Supabase...`);
+    console.log(`[MP SUCESSO] Link gerado: ${mpData.init_point}. Gravando no Supabase...`);
 
-    // === 2. SEGUNDO: SALVAMOS NO BANCO ATRELANDO AO ID DO PAGAMENTO ===
+    // === 2. SALVAMOS NO BANCO ATRELANDO AO ID DO PEDIDO ===
     const dadosParaSalvar = participantes.map((p, index) => {
       const cpfLimpo = p.cpf ? String(p.cpf).replace(/\D/g, '') : null;
       const telefoneLimpo = p.phone ? String(p.phone).replace(/\D/g, '') : telefoneTitular;
@@ -109,10 +128,10 @@ export default async function handler(req, res) {
         nome: (p.name || 'Sem Nome').trim(),
         email: index === 0 ? emailLimpo : ((p.email || emailLimpo).trim()),
         telefone: index === 0 ? telefoneTitular : telefoneLimpo,
-        cpf: index === 0 ? cpfLimpo : null, // Só o titular precisa de CPF obrigatório salvo
+        cpf: index === 0 ? cpfLimpo : null,
         contato_emergencia: (contatoEmergencia || '').trim() || null,
         pago: false,
-        payment_id: idDoPagamento // 🏆 O elo que permite aprovar o grupo inteiro de uma vez!
+        payment_id: idPedido // 🏆 Salvamos nosso ID único para o Webhook aprovar depois!
       };
     });
 
@@ -123,10 +142,15 @@ export default async function handler(req, res) {
       throw new Error(`Erro ao registrar no banco de dados: ${erroInsert.message}`);
     }
 
-    console.log(`[BANCO SUCESSO] ${dadosParaSalvar.length} participante(s) gravado(s)! Devolvendo QR Code...`);
+    console.log(`[BANCO SUCESSO] ${dadosParaSalvar.length} participante(s) gravado(s)!`);
 
-    // === 3. DEVOLVEMOS O QR CODE E OS DADOS PARA A TELA ===
-    return res.status(200).json(mpData);
+    // === 3. DEVOLVEMOS A URL DO CHECKOUT PARA O FRONT-END ===
+    // Retornamos o init_point (link da tela de pagamento do Mercado Pago)
+    return res.status(200).json({
+      url_pagamento: mpData.init_point,
+      preference_id: mpData.id,
+      idPedido: idPedido
+    });
 
   } catch (error) {
     console.error("[ERRO FATAL SERVIDOR]:", error);
