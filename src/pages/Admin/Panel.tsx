@@ -1,7 +1,7 @@
 // src/pages/Admin/Panel.tsx
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, Search, RefreshCw, LogOut, Download, CheckCircle, Clock, ShieldAlert, Phone, Mail, FileText, Trash2, Check, MessageCircle, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Users, DollarSign, Search, RefreshCw, LogOut, Download, CheckCircle, Clock, ShieldAlert, Phone, Mail, FileText, Trash2, Check, MessageCircle, Loader2, Pencil, X, Save } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Participante } from '../../types';
 
 interface AdminProps {
@@ -25,8 +25,12 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'pago' | 'pendente'>('todos');
   const [erro, setErro] = useState('');
 
-  // Estados para mostrar o "girando" (loading) só no botão que está sendo clicado
+  // Estado para loading dos botões individuais
   const [processandoId, setProcessandoId] = useState<string | number | null>(null);
+
+  // 🚀 ESTADO DO MODAL DE EDIÇÃO
+  const [itemEditando, setItemEditando] = useState<InscricaoAdmin | null>(null);
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   // 1. CARREGAR DADOS
   const carregarInscricoes = async () => {
@@ -76,12 +80,51 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     carregarInscricoes();
   }, []);
 
-  // 2. 🗑️ FUNÇÃO DE EXCLUIR INSCRITO
+  // 2. ✏️ SALVAR EDIÇÃO DO PARTICIPANTE
+  const salvarEdicao = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!itemEditando || !itemEditando.id) return;
+
+    setSalvandoEdicao(true);
+    try {
+      const contatoSosCompleto = `${itemEditando.emergencyName || ''} - ${itemEditando.emergencyPhone || ''}`.trim();
+
+      const res = await fetch('/api/admin-editar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senha,
+          id: itemEditando.id,
+          nome: itemEditando.name,
+          telefone: itemEditando.phone,
+          email: itemEditando.email,
+          cpf: itemEditando.cpf,
+          contato_emergencia: contatoSosCompleto,
+          valor: itemEditando.valor
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Falha ao salvar no servidor.');
+      }
+
+      // Atualiza a lista na tela em tempo real sem precisar recarregar
+      setInscricoes(prev => prev.map(item => item.id === itemEditando.id ? itemEditando : item));
+      setItemEditando(null);
+      alert('Dados atualizados com sucesso!');
+    } catch (err: any) {
+      console.error(err);
+      alert(`Erro ao editar: ${err.message}`);
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  };
+
+  // 3. 🗑️ EXCLUIR INSCRITO
   const excluirInscricao = async (id: string | number | undefined, nome: string) => {
     if (!id) return;
-    if (!window.confirm(`Tem certeza que deseja EXCLUIR a inscrição de "${nome}"? Esta ação não pode ser desfeita.`)) {
-      return;
-    }
+    if (!window.confirm(`Tem certeza que deseja EXCLUIR a inscrição de "${nome}"? Esta ação não pode ser desfeita.`)) return;
 
     setProcessandoId(id);
     try {
@@ -91,12 +134,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
         body: JSON.stringify({ senha, id })
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Erro ao excluir no servidor.');
-      }
-
-      // Remove da tela imediatamente sem precisar recarregar tudo
+      if (!res.ok) throw new Error('Erro ao excluir no servidor.');
       setInscricoes(prev => prev.filter(item => item.id !== id));
       alert(`Inscrição de ${nome} excluída com sucesso!`);
     } catch (err: any) {
@@ -107,7 +145,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 3. ✅ FUNÇÃO DE APROVAR PAGAMENTO MANUAL
+  // 4. ✅ APROVAR PAGAMENTO MANUAL
   const aprovarInscricao = async (id: string | number | undefined, nome: string) => {
     if (!id) return;
     if (!window.confirm(`Confirmar o pagamento de "${nome}" manualmente?`)) return;
@@ -121,8 +159,6 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
       });
 
       if (!res.ok) throw new Error('Erro ao aprovar pagamento no servidor.');
-
-      // Atualiza o status na tela para verde na mesma hora
       setInscricoes(prev => prev.map(item => item.id === id ? { ...item, status: 'pago' } : item));
     } catch (err: any) {
       console.error(err);
@@ -132,7 +168,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 4. 💬 ABRIR WHATSAPP
+  // 5. 💬 WHATSAPP
   const chamarWhatsApp = (telefone: string, nome: string, pago: boolean) => {
     const foneLimpo = telefone.replace(/\D/g, '');
     if (foneLimpo.length < 10) return alert("Número de WhatsApp inválido!");
@@ -332,7 +368,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
                   </div>
                 </div>
 
-                {/* 🚀 BARRA DE BOTÕES DE AÇÃO (EXCLUIR, APROVAR, WHATSAPP) */}
+                {/* 🚀 BARRA DE BOTÕES DE AÇÃO COM O NOVO BOTÃO DE EDITAR */}
                 <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-col gap-3 pl-2">
                   <div className="flex justify-between items-center text-xs font-mono text-zinc-500">
                     <span>Valor: R$ {formatarMoeda(item.valor || 55)}</span>
@@ -340,6 +376,15 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-1">
+                    {/* ✏️ BOTÃO EDITAR */}
+                    <button 
+                      onClick={() => setItemEditando({ ...item })} 
+                      className="bg-zinc-800 hover:bg-blue-600 text-zinc-400 hover:text-white p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-blue-500 flex items-center gap-1 text-[11px] font-bold"
+                      title="Editar Dados do Participante"
+                    >
+                      <Pencil size={15} />
+                    </button>
+
                     {/* Botão WhatsApp */}
                     <button 
                       onClick={() => chamarWhatsApp(item.phone, item.name, item.status === 'pago')} 
@@ -380,6 +425,87 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
         )}
 
       </div>
+
+      {/* ============================================================================
+          ✏️ MODAL DE EDIÇÃO DE PARTICIPANTE
+          ============================================================================ */}
+      <AnimatePresence>
+        {itemEditando && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-300">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-zinc-800 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="bg-blue-500/10 p-2 rounded-xl border border-blue-500/20 text-blue-400">
+                    <Pencil size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black uppercase italic tracking-tight text-white">Editar Participante</h3>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">ID do Registro: #{itemEditando.id}</p>
+                  </div>
+                </div>
+                <button onClick={() => setItemEditando(null)} className="text-zinc-500 hover:text-white p-2 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={salvarEdicao} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Nome Completo</label>
+                  <input required type="text" value={itemEditando.name} onChange={e => setItemEditando({...itemEditando, name: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-blue-500 transition-all" />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">WhatsApp</label>
+                    <input type="tel" value={itemEditando.phone} onChange={e => setItemEditando({...itemEditando, phone: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-blue-500 transition-all" placeholder="(81) 99999-9999" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">CPF</label>
+                    <input type="text" value={itemEditando.cpf} onChange={e => setItemEditando({...itemEditando, cpf: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-blue-500 transition-all" placeholder="000.000.000-00" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">E-mail</label>
+                  <input type="email" value={itemEditando.email} onChange={e => setItemEditando({...itemEditando, email: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-blue-500 transition-all" placeholder="email@exemplo.com" />
+                </div>
+
+                <div className="pt-2 border-t border-zinc-800/80">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-2 flex items-center gap-1">
+                    <ShieldAlert size={12} /> Contato de Emergência (SOS)
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-zinc-500 ml-1">Nome (Parentesco)</label>
+                      <input type="text" value={itemEditando.emergencyName} onChange={e => setItemEditando({...itemEditando, emergencyName: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-blue-500 transition-all" placeholder="Ex: Ana (Mãe)" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-zinc-500 ml-1">Telefone SOS</label>
+                      <input type="tel" value={itemEditando.emergencyPhone} onChange={e => setItemEditando({...itemEditando, emergencyPhone: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-blue-500 transition-all" placeholder="(81) 99999-9999" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button type="button" onClick={() => setItemEditando(null)} className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-black uppercase text-xs rounded-xl tracking-widest transition-all">
+                    Cancelar
+                  </button>
+                  <button type="submit" disabled={salvandoEdicao} className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs rounded-xl tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50">
+                    {salvandoEdicao ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    <span>{salvandoEdicao ? 'Salvando...' : 'Salvar Alterações'}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };
