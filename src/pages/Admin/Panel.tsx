@@ -1,6 +1,6 @@
 // src/pages/Admin/Panel.tsx
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, Search, RefreshCw, LogOut, Download, CheckCircle, Clock, ShieldAlert, Phone, Mail, FileText } from 'lucide-react';
+import { Users, DollarSign, Search, RefreshCw, LogOut, Download, CheckCircle, Clock, ShieldAlert, Phone, Mail, FileText, Trash2, Check, MessageCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Participante } from '../../types';
 
@@ -25,29 +25,25 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'pago' | 'pendente'>('todos');
   const [erro, setErro] = useState('');
 
-  // Busca os dados das inscrições no backend
+  // Estados para mostrar o "girando" (loading) só no botão que está sendo clicado
+  const [processandoId, setProcessandoId] = useState<string | number | null>(null);
+
+  // 1. CARREGAR DADOS
   const carregarInscricoes = async () => {
     setLoading(true);
     setErro('');
     try {
-      // 🚀 CORREÇÃO 1: Apontando para o arquivo correto na Vercel (/api/admin-listar)
       const res = await fetch('/api/admin-listar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ senha })
       });
 
-      if (res.status === 401) {
-        throw new Error('Senha incorreta ou acesso negado pelo servidor.');
-      }
-
-      if (!res.ok) {
-        throw new Error('Falha ao carregar dados. Verifique a conexão com a API.');
-      }
+      if (res.status === 401) throw new Error('Senha incorreta ou acesso negado pelo servidor.');
+      if (!res.ok) throw new Error('Falha ao carregar dados. Verifique a conexão com a API.');
       
       const data = await res.json();
       
-      // 🚀 CORREÇÃO 2: Adaptando o retorno do Supabase para os nomes que o seu visual React espera
       const dadosTratados = (Array.isArray(data) ? data : data.inscricoes || []).map((item: any, ind: number) => {
         const em = item.contato_emergencia || item.emergencyName || '';
         const partesEm = em.includes('-') ? em.split('-') : [em, ''];
@@ -62,7 +58,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
           emergencyName: partesEm[0].trim() || 'Não informado',
           emergencyPhone: item.emergencyPhone || partesEm[1]?.trim() || '---',
           status: (item.status === 'pago' || item.pago === true) ? 'pago' : 'pendente',
-          valor: Number(item.valor || 55), // 🚀 CORREÇÃO 3: Fallback de R$ 55
+          valor: Number(item.valor || 55),
           tipo: item.cpf ? 'Titular' : 'Acompanhante'
         };
       });
@@ -80,31 +76,90 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     carregarInscricoes();
   }, []);
 
-  // Cálculos de resumo (Cards do topo)
+  // 2. 🗑️ FUNÇÃO DE EXCLUIR INSCRITO
+  const excluirInscricao = async (id: string | number | undefined, nome: string) => {
+    if (!id) return;
+    if (!window.confirm(`Tem certeza que deseja EXCLUIR a inscrição de "${nome}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    setProcessandoId(id);
+    try {
+      const res = await fetch('/api/admin-excluir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senha, id })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao excluir no servidor.');
+      }
+
+      // Remove da tela imediatamente sem precisar recarregar tudo
+      setInscricoes(prev => prev.filter(item => item.id !== id));
+      alert(`Inscrição de ${nome} excluída com sucesso!`);
+    } catch (err: any) {
+      console.error(err);
+      alert(`Falha ao excluir: ${err.message}`);
+    } finally {
+      setProcessandoId(null);
+    }
+  };
+
+  // 3. ✅ FUNÇÃO DE APROVAR PAGAMENTO MANUAL
+  const aprovarInscricao = async (id: string | number | undefined, nome: string) => {
+    if (!id) return;
+    if (!window.confirm(`Confirmar o pagamento de "${nome}" manualmente?`)) return;
+
+    setProcessandoId(id);
+    try {
+      const res = await fetch('/api/admin-aprovar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senha, id })
+      });
+
+      if (!res.ok) throw new Error('Erro ao aprovar pagamento no servidor.');
+
+      // Atualiza o status na tela para verde na mesma hora
+      setInscricoes(prev => prev.map(item => item.id === id ? { ...item, status: 'pago' } : item));
+    } catch (err: any) {
+      console.error(err);
+      alert(`Falha ao aprovar: ${err.message}`);
+    } finally {
+      setProcessandoId(null);
+    }
+  };
+
+  // 4. 💬 ABRIR WHATSAPP
+  const chamarWhatsApp = (telefone: string, nome: string, pago: boolean) => {
+    const foneLimpo = telefone.replace(/\D/g, '');
+    if (foneLimpo.length < 10) return alert("Número de WhatsApp inválido!");
+    
+    const statusMsg = pago ? "confirmadíssima ✅" : "pendente de pagamento ⏳";
+    const texto = encodeURIComponent(`Olá ${nome}! Aqui é da organização da *Trilha 3 Reinos*. Vimos que sua inscrição está ${statusMsg}. Tudo certo para a nossa aventura dia 23 de Agosto? 🌿⛰️`);
+    window.open(`https://wa.me/55${foneLimpo}?text=${texto}`, '_blank');
+  };
+
+  // Resumos e Filtros
   const totalInscritos = inscricoes.length;
   const pagamentosConfirmados = inscricoes.filter(i => i.status === 'pago').length;
   const pagamentosPendentes = inscricoes.filter(i => i.status === 'pendente').length;
-  const receitaTotal = inscricoes
-    .filter(i => i.status === 'pago')
-    .reduce((acc, curr) => acc + (curr.valor || 55), 0);
+  const receitaTotal = inscricoes.filter(i => i.status === 'pago').reduce((acc, curr) => acc + (curr.valor || 55), 0);
 
-  // Filtragem da lista pela barra de busca e botões de status
   const inscricoesFiltradas = inscricoes.filter(item => {
     const atendeBusca = 
       item.name.toLowerCase().includes(busca.toLowerCase()) ||
       String(item.cpf).includes(busca) ||
       (item.email && item.email.toLowerCase().includes(busca.toLowerCase()));
     
-    const atendeStatus = 
-      filtroStatus === 'todos' ? true : item.status === filtroStatus;
-
+    const atendeStatus = filtroStatus === 'todos' ? true : item.status === filtroStatus;
     return atendeBusca && atendeStatus;
   });
 
-  // Exportar lista para CSV (Excel)
   const exportarCSV = () => {
     if (inscricoesFiltradas.length === 0) return alert("Nenhum dado para exportar!");
-    
     const cabecalho = "Tipo,Nome,CPF,WhatsApp,E-mail,Emergencia,Fone Emergencia,Status,Valor\n";
     const linhas = inscricoesFiltradas.map(i => 
       `"${i.tipo || 'Titular'}","${i.name}","${i.cpf}","${i.phone}","${i.email || ''}","${i.emergencyName || ''}","${i.emergencyPhone || ''}","${i.status || 'pendente'}","R$ ${i.valor || 55}"`
@@ -136,28 +191,15 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-            <button 
-              onClick={carregarInscricoes} 
-              disabled={loading}
-              className="bg-zinc-800 hover:bg-zinc-700 text-white p-3 rounded-xl flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-50"
-              title="Atualizar Dados"
-            >
+            <button onClick={carregarInscricoes} disabled={loading} className="bg-zinc-800 hover:bg-zinc-700 text-white p-3 rounded-xl flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-50">
               <RefreshCw size={16} className={loading ? "animate-spin text-emerald-500" : ""} />
               <span className="hidden sm:inline">Atualizar</span>
             </button>
-
-            <button 
-              onClick={exportarCSV} 
-              className="bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500 hover:text-zinc-950 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-all"
-            >
+            <button onClick={exportarCSV} className="bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500 hover:text-zinc-950 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-all">
               <Download size={16} />
               <span>Exportar Excel</span>
             </button>
-
-            <button 
-              onClick={fecharAdmin} 
-              className="bg-red-500/10 border border-red-500/30 hover:bg-red-500 hover:text-white text-red-400 px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-all"
-            >
+            <button onClick={fecharAdmin} className="bg-red-500/10 border border-red-500/30 hover:bg-red-500 hover:text-white text-red-400 px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-all">
               <LogOut size={16} />
               <span>Sair</span>
             </button>
@@ -171,19 +213,16 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Total de Inscritos</p>
             <p className="text-3xl font-black text-white mt-2 font-mono">{totalInscritos}</p>
           </div>
-
           <div className="bg-zinc-900/60 border border-zinc-800 p-6 rounded-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10"><DollarSign size={48} className="text-emerald-500" /></div>
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Receita (Confirmada)</p>
             <p className="text-3xl font-black text-white mt-2 font-mono">R$ {formatarMoeda(receitaTotal)}</p>
           </div>
-
           <div className="bg-zinc-900/60 border border-zinc-800 p-6 rounded-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10"><CheckCircle size={48} className="text-emerald-500" /></div>
             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Pix Confirmados</p>
             <p className="text-3xl font-black text-emerald-400 mt-2 font-mono">{pagamentosConfirmados}</p>
           </div>
-
           <div className="bg-zinc-900/60 border border-zinc-800 p-6 rounded-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10"><Clock size={48} className="text-amber-500" /></div>
             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Aguardando Pix</p>
@@ -195,32 +234,17 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-zinc-900/40 border border-zinc-800/80 p-4 rounded-2xl">
           <div className="relative w-full md:w-96">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input 
-              type="text" 
-              placeholder="Buscar por nome, CPF ou e-mail..." 
-              value={busca}
-              onChange={e => setBusca(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-11 pr-4 py-3 text-xs font-bold text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500 transition-all"
-            />
+            <input type="text" placeholder="Buscar por nome, CPF ou e-mail..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-11 pr-4 py-3 text-xs font-bold text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500 transition-all" />
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-            <button 
-              onClick={() => setFiltroStatus('todos')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${filtroStatus === 'todos' ? 'bg-white text-zinc-950 font-black' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-800'}`}
-            >
+            <button onClick={() => setFiltroStatus('todos')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${filtroStatus === 'todos' ? 'bg-white text-zinc-950 font-black' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-800'}`}>
               Todos ({totalInscritos})
             </button>
-            <button 
-              onClick={() => setFiltroStatus('pago')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${filtroStatus === 'pago' ? 'bg-emerald-500 text-zinc-950 font-black' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-800'}`}
-            >
+            <button onClick={() => setFiltroStatus('pago')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${filtroStatus === 'pago' ? 'bg-emerald-500 text-zinc-950 font-black' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-800'}`}>
               <CheckCircle size={14} /> Pagos ({pagamentosConfirmados})
             </button>
-            <button 
-              onClick={() => setFiltroStatus('pendente')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${filtroStatus === 'pendente' ? 'bg-amber-500 text-zinc-950 font-black' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-800'}`}
-            >
+            <button onClick={() => setFiltroStatus('pendente')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 flex items-center gap-1.5 ${filtroStatus === 'pendente' ? 'bg-amber-500 text-zinc-950 font-black' : 'bg-zinc-800/60 text-zinc-400 hover:bg-zinc-800'}`}>
               <Clock size={14} /> Pendentes ({pagamentosPendentes})
             </button>
           </div>
@@ -234,7 +258,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
           </div>
         )}
 
-        {/* LISTA DE INSCRITOS (TABELA/CARDS) */}
+        {/* LISTA DE INSCRITOS (CARDS COM BOTÕES DE AÇÃO) */}
         {loading ? (
           <div className="text-center py-20 opacity-50 space-y-4">
             <RefreshCw className="animate-spin text-emerald-500 mx-auto" size={32} />
@@ -260,7 +284,6 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
                     : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700'
                 }`}
               >
-                {/* BARRA LATERAL DE STATUS */}
                 <div className={`absolute top-0 left-0 w-1.5 h-full ${item.status === 'pago' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
 
                 <div className="space-y-4 pl-2">
@@ -309,10 +332,48 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-zinc-800/80 flex justify-between items-center pl-2 text-xs font-mono text-zinc-500">
-                  <span>Valor: R$ {formatarMoeda(item.valor || 55)}</span>
-                  <span>#{(idx + 1).toString().padStart(3, '0')}</span>
+                {/* 🚀 BARRA DE BOTÕES DE AÇÃO (EXCLUIR, APROVAR, WHATSAPP) */}
+                <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-col gap-3 pl-2">
+                  <div className="flex justify-between items-center text-xs font-mono text-zinc-500">
+                    <span>Valor: R$ {formatarMoeda(item.valor || 55)}</span>
+                    <span>#{(idx + 1).toString().padStart(3, '0')}</span>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    {/* Botão WhatsApp */}
+                    <button 
+                      onClick={() => chamarWhatsApp(item.phone, item.name, item.status === 'pago')} 
+                      className="bg-zinc-800 hover:bg-[#25D366] text-zinc-400 hover:text-zinc-950 p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-[#25D366] flex items-center gap-1 text-[11px] font-bold"
+                      title="Chamar no WhatsApp"
+                    >
+                      <MessageCircle size={15} />
+                    </button>
+
+                    {/* Botão Aprovar Manual (Só aparece se estiver pendente) */}
+                    {item.status !== 'pago' && (
+                      <button 
+                        onClick={() => aprovarInscricao(item.id, item.name)} 
+                        disabled={processandoId === item.id}
+                        className="bg-zinc-800 hover:bg-emerald-500 text-zinc-400 hover:text-zinc-950 p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-emerald-500 flex items-center gap-1 text-[11px] font-bold disabled:opacity-50"
+                        title="Aprovar Pagamento Manualmente"
+                      >
+                        {processandoId === item.id ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+                        <span className="text-[10px] uppercase font-black">Aprovar</span>
+                      </button>
+                    )}
+
+                    {/* Botão Excluir */}
+                    <button 
+                      onClick={() => excluirInscricao(item.id, item.name)} 
+                      disabled={processandoId === item.id}
+                      className="bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-white p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-red-500 flex items-center gap-1 text-[11px] font-bold disabled:opacity-50"
+                      title="Excluir Registro"
+                    >
+                      {processandoId === item.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                    </button>
+                  </div>
                 </div>
+
               </motion.div>
             ))}
           </div>
