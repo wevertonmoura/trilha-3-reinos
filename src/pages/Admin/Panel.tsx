@@ -32,7 +32,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
   const [itemEditando, setItemEditando] = useState<InscricaoAdmin | null>(null);
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
-  // 1. CARREGAR DADOS
+  // 1. CARREGAR DADOS (Mantém o admin-listar)
   const carregarInscricoes = async () => {
     setLoading(true);
     setErro('');
@@ -80,7 +80,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     carregarInscricoes();
   }, []);
 
-  // 2. ✏️ SALVAR EDIÇÃO DO PARTICIPANTE
+  // 2. ✏️ SALVAR EDIÇÃO DO PARTICIPANTE (Apontando para admin-acao)
   const salvarEdicao = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemEditando || !itemEditando.id) return;
@@ -89,10 +89,12 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     try {
       const contatoSosCompleto = `${itemEditando.emergencyName || ''} - ${itemEditando.emergencyPhone || ''}`.trim();
 
-      const res = await fetch('/api/admin-editar', {
+      // 🔥 CORREÇÃO: Usando a rota unificada e enviando a ação 'editar'
+      const res = await fetch('/api/admin-acao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          acao: 'editar',
           senha,
           id: itemEditando.id,
           nome: itemEditando.name,
@@ -121,7 +123,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 3. 🗑️ FUNÇÃO DE EXCLUIR INSCRITO
+  // 3. 🗑️ FUNÇÃO DE EXCLUIR INSCRITO (Apontando para admin-acao)
   const excluirInscricao = async (id: string | number | undefined, nome: string) => {
     if (!id) return;
     if (!window.confirm(`Tem certeza que deseja EXCLUIR a inscrição de "${nome}"? Esta ação não pode ser desfeita.`)) {
@@ -130,10 +132,11 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
 
     setProcessandoId(id);
     try {
-      const res = await fetch('/api/admin-excluir', {
+      // 🔥 CORREÇÃO: Usando a rota unificada e enviando a ação 'excluir'
+      const res = await fetch('/api/admin-acao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senha, id })
+        body: JSON.stringify({ acao: 'excluir', senha, id })
       });
 
       if (!res.ok) {
@@ -141,6 +144,7 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
         throw new Error(errData.error || 'Erro ao excluir no servidor.');
       }
 
+      // Remove da tela imediatamente sem precisar recarregar tudo
       setInscricoes(prev => prev.filter(item => item.id !== id));
       alert(`Inscrição de ${nome} excluída com sucesso!`);
     } catch (err: any) {
@@ -151,20 +155,23 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
     }
   };
 
-  // 4. ✅ FUNÇÃO DE APROVAR PAGAMENTO MANUAL
+  // 4. ✅ FUNÇÃO DE APROVAR PAGAMENTO MANUAL (Apontando para admin-acao)
   const aprovarInscricao = async (id: string | number | undefined, nome: string) => {
     if (!id) return;
     if (!window.confirm(`Confirmar o pagamento de "${nome}" manualmente?`)) return;
 
     setProcessandoId(id);
     try {
-      const res = await fetch('/api/admin-aprovar', {
+      // 🔥 CORREÇÃO: Usando a rota unificada e enviando a ação 'aprovar'
+      const res = await fetch('/api/admin-acao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senha, id })
+        body: JSON.stringify({ acao: 'aprovar', senha, id })
       });
 
       if (!res.ok) throw new Error('Erro ao aprovar pagamento no servidor.');
+
+      // Atualiza o status na tela para verde na mesma hora
       setInscricoes(prev => prev.map(item => item.id === id ? { ...item, status: 'pago' } : item));
     } catch (err: any) {
       console.error(err);
