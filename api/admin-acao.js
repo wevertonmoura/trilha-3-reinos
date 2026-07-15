@@ -13,8 +13,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método inválido' });
 
   try {
-    // Puxamos a "acao" que o front-end quer executar: 'excluir', 'aprovar' ou 'editar'
-    const { acao, senha, id, nome, telefone, email, cpf, contato_emergencia, valor } = req.body;
+    const { acao, senha, id, nome, telefone, email, cpf, contato_emergencia } = req.body;
     const senhaCorreta = (process.env.SENHA_ADMIN || process.env.VITE_SENHA_ADMIN || '').trim();
 
     if (!senhaCorreta || senha !== senhaCorreta) {
@@ -39,15 +38,17 @@ export default async function handler(req, res) {
 
     // === AÇÃO 3: EDITAR DADOS ===
     if (acao === 'editar') {
+      // 🚀 CORREÇÃO: Tiramos o 'valor' daqui para o Supabase não travar procurando uma coluna que não existe!
       const dadosAtualizados = {
         nome: nome?.trim(),
         telefone: telefone?.replace(/\D/g, ''),
         email: email?.trim() || null,
         cpf: cpf?.replace(/\D/g, '') || null,
-        contato_emergencia: contato_emergencia?.trim() || null,
-        valor: valor ? Number(valor) : 55
+        contato_emergencia: contato_emergencia?.trim() || null
       };
+
       const { error } = await supabase.from('inscricao_trilha').update(dadosAtualizados).eq('id', id);
+      
       if (error) throw error;
       return res.status(200).json({ success: true, message: 'Editado com sucesso!' });
     }
