@@ -36,7 +36,7 @@ const Inscricao: React.FC<InscricaoProps> = ({
   const calcularValorIngressos = (qtd: number) => {
     const pares = Math.floor(qtd / 2);
     const avulsos = qtd % 2;
-    return (pares * 100) + (avulsos * 1);
+    return (pares * 100) + (avulsos * 55);
   };
 
   const removeParticipant = (index: number) => {
