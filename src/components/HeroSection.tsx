@@ -15,43 +15,40 @@ export default function HeroSection({ vagasOcupadas, LIMITE_VAGAS, scrollToForm 
     <section className="relative min-h-[75vh] md:min-h-[82vh] flex items-center justify-center overflow-hidden bg-zinc-950 pt-12 pb-10 px-4">
       
       {/* ============================================================================
-          ⛰️ FUNDO COM 5 CAMADAS DE MONTANHAS (MISTÉRIO E NEBLINA)
+          ⛰️ FUNDO COM 5 CAMADAS DE MONTANHAS (SVG + NEBLINA EMERALD)
           ============================================================================ */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        
-        {/* Fundo base escuro */}
-        <div className="absolute inset-0 bg-zinc-950" />
-        
-        {/* Brilho verde de aurora/neblina ao fundo (mais suave e elegante) */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-emerald-900/30 blur-[120px] rounded-full animate-pulse" style={{ animationDuration: '8s' }} />
+        {/* Luz de fundo Céu/Neblina */}
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-emerald-500/15 blur-[130px] rounded-full animate-pulse" style={{ animationDuration: '6s' }} />
 
-        {/* Camada 1 - Montanhas Mais Distantes (Bem suaves) */}
-        <svg className="absolute bottom-0 w-full h-[65%] object-cover text-zinc-800/30" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
+        {/* Camada 1 - Montanhas Mais Distantes (Silhueta longa e suave no horizonte) */}
+        <svg className="absolute bottom-0 w-full h-[65%] object-cover text-zinc-900/60" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
           <polygon points="0,320 0,220 150,160 350,230 550,110 800,200 1050,90 1280,180 1440,130 1440,320" />
         </svg>
 
-        {/* Camada 2 - Montanhas de Fundo */}
-        <svg className="absolute bottom-0 w-full h-[55%] object-cover text-zinc-800/50" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
+        {/* Camada 2 - Montanhas de Fundo (Picos secundários) */}
+        <svg className="absolute bottom-0 w-full h-[55%] object-cover text-zinc-900/80" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
           <polygon points="0,320 0,180 200,120 450,240 700,90 950,220 1200,110 1440,240 1440,320" />
         </svg>
 
-        {/* Camada 3 - Montanhas Intermediárias */}
-        <svg className="absolute bottom-0 w-full h-[45%] object-cover text-zinc-800/80" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
+        {/* Camada 3 - Montanhas Intermediárias (Picos centrais marcantes) */}
+        <svg className="absolute bottom-0 w-full h-[45%] object-cover text-zinc-900 drop-shadow-[0_-2px_15px_rgba(16,185,129,0.1)]" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
           <polygon points="0,320 0,240 160,130 360,250 600,80 860,220 1100,100 1380,230 1440,180 1440,320" />
         </svg>
 
-        {/* Camada 4 - Montanhas Sub-Frontais (Quase pretas) */}
-        <svg className="absolute bottom-0 w-full h-[35%] object-cover text-zinc-900" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
+        {/* Camada 4 - Montanhas Sub-Frontais (Cristas rochosas escuras) */}
+        <svg className="absolute bottom-0 w-full h-[35%] object-cover text-zinc-950/90 drop-shadow-[0_-1px_10px_rgba(0,0,0,0.8)]" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
           <polygon points="0,320 0,210 180,150 400,230 650,120 890,210 1150,130 1350,200 1440,160 1440,320" />
         </svg>
 
-        {/* Camada 5 - Montanhas da Frente (Preta para fundir com a página embaixo) */}
-        <svg className="absolute bottom-0 w-full h-[20%] object-cover text-zinc-950" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
+        {/* Camada 5 - Montanhas da Frente (Base escura derretendo na página) */}
+        <svg className="absolute bottom-0 w-full h-[25%] object-cover text-zinc-950" viewBox="0 0 1440 320" preserveAspectRatio="none" fill="currentColor">
           <polygon points="0,320 0,260 240,160 480,280 720,140 960,270 1200,170 1440,280 1440,320" />
         </svg>
 
-        {/* 🌟 O SEGREDO MÁGICO: Um esfumaçado de baixo para cima que une as montanhas com a tela preta de baixo */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
+        {/* Degradê frontal para garantir leitura perfeita */}
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-transparent" />
       </div>
 
       {/* ============================================================================
@@ -85,16 +82,16 @@ export default function HeroSection({ vagasOcupadas, LIMITE_VAGAS, scrollToForm 
           </div>
         </motion.div>
 
-        {/* TÍTULO DA TRILHA 3 REINOS */}
-        <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase leading-none text-white mb-2 drop-shadow-md">
-          Trilha <br /> 
+       {/* TÍTULO DA TRILHA SANTUÁRIO DOS 3 REINOS */}
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black italic tracking-tighter uppercase leading-none text-white mb-2 drop-shadow-md">
+          Trilha Santuário <br /> 
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 drop-shadow-[0_2px_10px_rgba(16,185,129,0.3)]">
-            3 Reinos
+            Dos 3 Reinos
           </span>
         </h1>
 
         {/* Localização Oficial */}
-        <p className="text-zinc-300 font-medium text-xs md:text-sm flex items-center justify-center gap-1.5 mb-6 tracking-wide drop-shadow-md">
+        <p className="text-zinc-300 font-medium text-xs md:text-sm flex items-center justify-center gap-1.5 mb-6 tracking-wide">
           <MapPin size={15} className="text-emerald-500 shrink-0" /> Guabiraba, Recife - PE
         </p>
 
@@ -105,17 +102,18 @@ export default function HeroSection({ vagasOcupadas, LIMITE_VAGAS, scrollToForm 
           transition={{ delay: 0.15 }}
           className="w-full flex flex-col gap-2.5 mb-8 max-w-[280px]"
         >
-          <div className="flex items-center justify-center gap-2 bg-zinc-900/80 text-zinc-200 text-xs font-bold py-2.5 px-4 rounded-xl border border-zinc-700/50 backdrop-blur-md shadow-lg uppercase tracking-wider">
+          {/* ATUALIZADO: DATA 23 DE AGOSTO */}
+          <div className="flex items-center justify-center gap-2 bg-gradient-to-b from-zinc-800/60 to-zinc-900/60 text-zinc-200 text-xs font-bold py-2.5 px-4 rounded-xl border-t border-zinc-700/50 border-x border-zinc-800/50 border-b border-zinc-900 backdrop-blur-md shadow-lg uppercase tracking-wider">
             <Calendar size={14} className="text-emerald-400" />
             <span>23 de Agosto, 2026</span>
           </div>
 
-          <div className="flex items-center justify-center gap-2 bg-zinc-900/80 text-emerald-400 text-xs font-black py-2.5 px-4 rounded-xl border border-emerald-500/30 backdrop-blur-md shadow-lg uppercase tracking-widest">
+          <div className="flex items-center justify-center gap-2 bg-gradient-to-b from-emerald-900/30 to-zinc-900/60 text-emerald-400 text-xs font-black py-2.5 px-4 rounded-xl border-t border-emerald-500/40 border-x border-emerald-500/20 border-b border-zinc-900 backdrop-blur-md shadow-lg uppercase tracking-widest">
             <Footprints size={14} className="text-emerald-400" />
             <span>Imersão na Natureza</span>
           </div>
 
-          <div className="flex items-center justify-center gap-2 bg-zinc-900/80 text-amber-400 text-xs font-bold py-2.5 px-4 rounded-xl border border-amber-500/30 backdrop-blur-md shadow-lg uppercase tracking-wider">
+          <div className="flex items-center justify-center gap-2 bg-gradient-to-b from-amber-900/20 to-zinc-900/60 text-amber-400 text-xs font-bold py-2.5 px-4 rounded-xl border-t border-amber-500/40 border-x border-amber-500/20 border-b border-zinc-900 backdrop-blur-md shadow-lg uppercase tracking-wider">
             <Clock size={14} className="text-amber-400" />
             <span>07:00h às 12:00h</span>
           </div>
