@@ -69,50 +69,71 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ dadosPix, participantes, onNo
   const valorExibicao = String(formatarMoeda(dadosPix.valorTotal)).replace('R$', '').trim();
 
   return (
-    /* 🚀 VOLTOU AO NORMAL: Inserido direto no fluxo da página sem a tela escura por cima */
     <div className="text-center space-y-8 animate-in fade-in zoom-in duration-500">
       
       {statusPagamento === 'pago' ? (
         /* ============================================================================
-           🎉 TELA DE CELEBRAÇÃO (PAGAMENTO APROVADO)
+           🎉 CARD OFICIAL DE COMPRA CONFIRMADA (TURBINADO!)
            ============================================================================ */
-        <div className="py-2 space-y-6 flex flex-col items-center">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-zinc-900/95 border-2 border-emerald-500/40 rounded-[2.5rem] p-6 md:p-8 shadow-[0_0_50px_rgba(16,185,129,0.15)] max-w-md mx-auto relative overflow-hidden text-center space-y-6"
+        >
+          {/* Enfeite: Luz de neon superior no Card */}
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600 animate-pulse" />
+
+          {/* Ícone de Sucesso Animado */}
           <motion.div 
             initial={{ scale: 0 }} 
             animate={{ scale: 1 }} 
-            transition={{ type: "spring", stiffness: 200, damping: 10 }}
-            className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(16,185,129,0.4)]"
+            transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.1 }}
+            className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(16,185,129,0.5)] mt-2"
           >
-            <CheckCircle size={40} className="text-zinc-950" />
+            <CheckCircle size={42} className="text-zinc-950 stroke-[2.5]" />
           </motion.div>
 
-          <h2 className="text-3xl font-black uppercase italic text-white tracking-tighter">
-            Pagamento <br /> Confirmado!
-          </h2>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-block mb-2.5 shadow-sm">
+              ✨ Inscrição Garantida
+            </span>
+            <h2 className="text-3xl font-black uppercase italic text-white tracking-tighter leading-none">
+              Compra <br /> Confirmada!
+            </h2>
+          </div>
           
-          <p className="text-zinc-400 font-bold text-sm max-w-xs mx-auto leading-relaxed">
-            O comprovante e os detalhes da sua aventura foram enviados para: <br />
-            <strong className="text-emerald-400 block mt-1 underline decoration-emerald-500/50">{dadosPix.emailPrincipal}</strong>
-          </p>
+          {/* DESTAQUE PARA O E-MAIL DO COMPROVANTE */}
+          <div className="bg-zinc-950/90 p-4 rounded-2xl border border-emerald-500/30 shadow-inner space-y-1.5 text-left">
+            <p className="text-zinc-400 font-semibold text-xs leading-relaxed">
+              📧 O comprovante e os detalhes da sua aventura foram enviados para o e-mail:
+            </p>
+            <p className="text-emerald-400 font-black text-sm tracking-wide break-all underline decoration-emerald-500/50">
+              {dadosPix.emailPrincipal}
+            </p>
+          </div>
 
-          <div className="space-y-3 text-left w-full max-w-md mx-auto pt-2 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 text-center mb-2">Participantes Confirmados</p>
+          {/* LISTA DE PARTICIPANTES NO CARD */}
+          <div className="space-y-2.5 text-left pt-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center mb-2">
+              Participantes Confirmados ({participantes.length})
+            </p>
             {participantes.map((p, index) => (
               <motion.div 
-                initial={{ y: 20, opacity: 0 }} 
-                animate={{ y: 0, opacity: 1 }} 
-                transition={{ delay: index * 0.15 }} 
+                initial={{ x: -15, opacity: 0 }} 
+                animate={{ x: 0, opacity: 1 }} 
+                transition={{ delay: 0.2 + index * 0.1 }} 
                 key={index} 
-                className="bg-zinc-900/90 p-4 rounded-xl border border-emerald-500/30 flex items-center gap-4 shadow-lg"
+                className="bg-zinc-950/90 p-3.5 rounded-xl border border-zinc-800 flex items-center gap-3.5 shadow-md hover:border-emerald-500/50 transition-colors"
               >
-                <div className="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
-                  <Ticket className="text-emerald-400" size={22} />
+                <div className="bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 shrink-0">
+                  <Ticket className="text-emerald-400" size={20} />
                 </div>
-                <div className="overflow-hidden">
-                  <p className="text-[10px] uppercase text-emerald-500 font-extrabold tracking-widest">
+                <div className="overflow-hidden flex-1">
+                  <p className="text-[9px] uppercase text-emerald-500 font-extrabold tracking-widest">
                     {index === 0 ? "Titular da Compra" : `Trilheiro(a) #${index + 1}`}
                   </p>
-                  <p className="text-white font-bold uppercase truncate text-base">{p.name || 'Participante'}</p>
+                  <p className="text-white font-bold uppercase truncate text-sm">{p.name || 'Participante'}</p>
                 </div>
               </motion.div>
             ))}
@@ -120,11 +141,11 @@ const PixCheckout: React.FC<PixCheckoutProps> = ({ dadosPix, participantes, onNo
 
           <button 
             onClick={onNovaInscricao} 
-            className="mt-6 px-6 py-3.5 bg-zinc-900 border border-zinc-700 hover:border-emerald-500 rounded-xl text-zinc-300 hover:text-emerald-400 text-xs font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
+            className="w-full mt-4 py-4 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black uppercase tracking-widest text-xs rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] active:scale-95 flex items-center justify-center gap-2"
           >
             Fazer Nova Inscrição
           </button>
-        </div>
+        </motion.div>
       ) : (
         /* ============================================================================
            ⏳ TELA DE PAGAMENTO (AGUARDANDO PIX OU EXPIRADO)
