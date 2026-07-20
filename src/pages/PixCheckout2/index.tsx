@@ -1,4 +1,3 @@
-// src/pages/PixCheckout2/index.tsx
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, QrCode, Copy, Clock, Ticket, RefreshCw, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
