@@ -36,7 +36,6 @@ const AdminTable: React.FC<AdminTableProps> = ({
         </thead>
         <tbody className="divide-y divide-zinc-800/50 text-sm">
           {dados.map((p, i) => {
-            // 🚀 LEITURA INTELIGENTE (Compatível com nomes em inglês do Panel ou português do Banco)
             const nomePessoa = p.name || p.nome || 'Trilheiro Sem Nome';
             const telefonePessoa = p.phone || p.telefone || '';
             const cpfPessoa = p.cpf || '';
@@ -44,6 +43,22 @@ const AdminTable: React.FC<AdminTableProps> = ({
             const sosContato = p.emergencyName ? `${p.emergencyName} (${p.emergencyPhone || '---'})` : (p.contato_emergencia || 'N/A');
             const isPago = p.status === 'pago' || p.pago === true;
             const idPessoa = p.id || i;
+
+            // 🚀 LÓGICA DE CASADINHA: Procurar acompanhante pelo payment_id
+            let nomeWhatsApp = nomePessoa.split(' ')[0]; // Pega o 1º nome do titular
+            const idPagamento = p.payment_id || p.id_pagamento;
+
+            if (idPagamento) {
+              const acompanhantes = dados.filter(d => 
+                (d.payment_id === idPagamento || d.id_pagamento === idPagamento) && 
+                d !== p // Garante que não vai pegar a própria pessoa
+              );
+              
+              if (acompanhantes.length > 0) {
+                const nomesAcompanhantes = acompanhantes.map(a => (a.name || a.nome || '').split(' ')[0]);
+                nomeWhatsApp = `${nomeWhatsApp} e ${nomesAcompanhantes.join(' e ')}`; // Ex: João e Maria
+              }
+            }
 
             return (
               <tr key={idPessoa} className="hover:bg-zinc-800/30 transition-all group">
@@ -109,7 +124,7 @@ const AdminTable: React.FC<AdminTableProps> = ({
                       )}
                       
                       <button 
-                        onClick={() => onWhatsApp(telefonePessoa, nomePessoa, isPago)} 
+                        onClick={() => onWhatsApp(telefonePessoa, nomeWhatsApp, isPago)} 
                         className="bg-zinc-800 hover:bg-[#25D366] text-zinc-400 hover:text-white p-2 rounded-xl transition-colors border border-zinc-700 hover:border-[#25D366]" 
                         title="Chamar no WhatsApp"
                       >
