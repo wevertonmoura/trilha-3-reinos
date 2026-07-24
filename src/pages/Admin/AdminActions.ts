@@ -5,8 +5,11 @@ export const chamarNoWhatsApp = (telefone: string, nome: string, pago: boolean) 
   if (fone.length === 10 || fone.length === 11) fone = '55' + fone;
   
   const primeiroNome = (nome || '').split(' ')[0]; 
-  const txtPago = `Fala, ${primeiroNome}! Aqui é da organização do Vem Para Trilha.\n\nA nossa aventura na trilha do Santuário dos Três Reinos já é agora! 🌿⛰️\n\nEntre no nosso Grupo Oficial do WhatsApp para receber o ponto de encontro e instruções finais:\n🔗 https://chat.whatsapp.com/EX5BV94TEvGDpaude0hl4v\n\nNos vemos lá! 💦🔥`;
-  const txtPendente = `Fala ${primeiroNome}! Aqui é da organização do Vem Para Trilha. Vi que você iniciou sua inscrição, mas o pagamento ainda não constou. Precisa de alguma ajuda com o PIX?`;
+  
+  // ✅ NOVA MENSAGEM ATUALIZADA - TRILHA ALDEIA (23 DE AGOSTO)
+  const txtPago = `Fala, ${primeiroNome}! Aqui é da organização do Vem Para Trilha. Passando para agradecer pela sua inscrição! A sua compra para a Trilha do Santuario dos 3 Reinos foi CONFIRMADA com sucesso! ✅\n\nA nossa aventura já é no dia 23 de Agosto! ⛰️🔥\n\nQueria pedir um favor: manda aqui o seu @ do Instagram e uma foto sua bem massa para a gente preparar a arte de presença confirmada, beleza?\n\nAh, só para avisar: na semana da trilha vamos criar um grupo oficial no WhatsApp com todo mundo que vai participar para passar a localização exata, ponto de encontro e os últimos detalhes! Nos vemos lá! 🎒💦`;
+  
+  const txtPendente = `Fala, ${primeiroNome}! Aqui é da organização do Vem Para Trilha. Vi que você iniciou sua inscrição, mas o pagamento ainda não constou. Precisa de alguma ajuda com o PIX?`;
   
   window.open(`https://wa.me/${fone}?text=${encodeURIComponent(pago ? txtPago : txtPendente)}`, '_blank');
 };
@@ -21,15 +24,15 @@ export const exportarCSV = (dados: any[], tipo: 'SOS' | 'COMPLETA' | 'ESPERA') =
   if (tipo === 'SOS') {
     headers = ["Nome Completo", "Contato de Emergência"];
     rows = dados.filter(p => p.pago).map(p => `"${p.nome || ''}";"${p.contato_emergencia || 'Não informado'}"`);
-    filename = 'Lista_SOS_Tres_Reinos';
+    filename = 'Lista_SOS_Trilha_Aldeia';
   } else if (tipo === 'COMPLETA') {
     headers = ["Nome Completo", "WhatsApp", "CPF", "Contato de Emergência", "Status"];
     rows = dados.map(p => `"${p.nome || ''}";"${p.telefone || ''}";"${p.cpf || ''}";"${p.contato_emergencia || ''}";"${p.pago ? 'PAGO' : 'PENDENTE'}"`);
-    filename = 'Inscritos_Geral_Tres_Reinos';
+    filename = 'Inscritos_Geral_Trilha_Aldeia';
   } else {
     headers = ["Nome na Espera", "WhatsApp", "Data de Cadastro"];
     rows = dados.map(p => `"${p.nome || ''}";"${p.telefone || ''}";"${p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : ''}"`);
-    filename = 'Lista_Espera_VIP_Tres_Reinos';
+    filename = 'Lista_Espera_VIP_Trilha_Aldeia';
   }
 
   const content = [headers.join(';'), ...rows].join('\n');
