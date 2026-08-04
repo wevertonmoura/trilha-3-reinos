@@ -4,7 +4,6 @@ import { Users, DollarSign, Search, RefreshCw, LogOut, Download, CheckCircle, Cl
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Participante } from '../../types';
 
-// 🚀 IMPORTANDO NOSSA FUNÇÃO NOVA COM A MENSAGEM DO SANTUÁRIO!
 import { chamarNoWhatsApp, exportarCSV } from './AdminActions';
 
 interface AdminProps {
@@ -20,6 +19,8 @@ interface InscricaoAdmin extends Participante {
   data?: string;
   tipo?: 'Titular' | 'Acompanhante';
   dataRegistro?: string; 
+  payment_id?: string;
+  id_pagamento?: string;
 }
 
 const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin }) => {
@@ -214,7 +215,6 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
               <RefreshCw size={16} className={loading ? "animate-spin text-emerald-500" : ""} />
               <span className="hidden sm:inline">Atualizar</span>
             </button>
-            {/* 🚀 USANDO O BOTÃO DE EXPORTAR DO NOSSO ARQUIVO NOVO */}
             <button onClick={() => exportarCSV(inscricoesFiltradas, 'COMPLETA')} className="bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500 hover:text-zinc-950 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-all">
               <Download size={16} />
               <span>Exportar Excel</span>
@@ -288,119 +288,138 @@ const AdminPanel: React.FC<AdminProps> = ({ senha, formatarMoeda, fecharAdmin })
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {inscricoesFiltradas.map((item, idx) => (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                key={item.id || idx}
-                className={`p-5 rounded-2xl border transition-all relative overflow-hidden flex flex-col justify-between ${
-                  item.status === 'pago' 
-                    ? 'bg-zinc-900/80 border-emerald-500/30 hover:border-emerald-500/60' 
-                    : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700'
-                }`}
-              >
-                <div className={`absolute top-0 left-0 w-1.5 h-full ${item.status === 'pago' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+            {inscricoesFiltradas.map((item, idx) => {
+              
+              // 🚀 LÓGICA DE CASADINHA ADICIONADA AQUI DENTRO DO MAP
+              let nomeWhatsApp = item.name.split(' ')[0]; // Pega o 1º nome do titular
+              const idPagamento = item.payment_id || item.id_pagamento;
 
-                <div className="space-y-4 pl-2">
-                  <div className="flex justify-between items-start gap-2 border-b border-zinc-800/80 pb-3">
-                    <div>
-                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                        {item.tipo || 'Titular'}
+              if (idPagamento) {
+                const acompanhantes = inscricoes.filter(d => 
+                  (d.payment_id === idPagamento || d.id_pagamento === idPagamento) && 
+                  d.id !== item.id // Garante que não vai pegar a própria pessoa
+                );
+                
+                if (acompanhantes.length > 0) {
+                  const nomesAcompanhantes = acompanhantes.map(a => (a.name || '').split(' ')[0]);
+                  nomeWhatsApp = `${nomeWhatsApp} e ${nomesAcompanhantes.join(' e ')}`;
+                }
+              }
+
+              return (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  key={item.id || idx}
+                  className={`p-5 rounded-2xl border transition-all relative overflow-hidden flex flex-col justify-between ${
+                    item.status === 'pago' 
+                      ? 'bg-zinc-900/80 border-emerald-500/30 hover:border-emerald-500/60' 
+                      : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700'
+                  }`}
+                >
+                  <div className={`absolute top-0 left-0 w-1.5 h-full ${item.status === 'pago' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+
+                  <div className="space-y-4 pl-2">
+                    <div className="flex justify-between items-start gap-2 border-b border-zinc-800/80 pb-3">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                          {item.tipo || 'Titular'}
+                        </span>
+                        <h3 className="font-bold text-white text-base leading-snug">{item.name}</h3>
+                        <p className="text-xs font-mono text-zinc-400 mt-0.5">{item.cpf}</p>
+                        
+                        <div className="flex items-center gap-1.5 mt-2 text-[9px] text-zinc-500 font-bold uppercase tracking-wider bg-zinc-950 inline-flex px-2 py-1 rounded-md border border-zinc-800">
+                          <CalendarDays size={10} className="text-emerald-500/70" />
+                          {formatarDataHora(item.dataRegistro)}
+                        </div>
+                      </div>
+
+                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shrink-0 flex items-center gap-1 ${
+                        item.status === 'pago' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {item.status === 'pago' ? <CheckCircle size={10} /> : <Clock size={10} />}
+                        {item.status === 'pago' ? 'Pago' : 'Pendente'}
                       </span>
-                      <h3 className="font-bold text-white text-base leading-snug">{item.name}</h3>
-                      <p className="text-xs font-mono text-zinc-400 mt-0.5">{item.cpf}</p>
-                      
-                      <div className="flex items-center gap-1.5 mt-2 text-[9px] text-zinc-500 font-bold uppercase tracking-wider bg-zinc-950 inline-flex px-2 py-1 rounded-md border border-zinc-800">
-                        <CalendarDays size={10} className="text-emerald-500/70" />
-                        {formatarDataHora(item.dataRegistro)}
-                      </div>
                     </div>
 
-                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shrink-0 flex items-center gap-1 ${
-                      item.status === 'pago' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                    }`}>
-                      {item.status === 'pago' ? <CheckCircle size={10} /> : <Clock size={10} />}
-                      {item.status === 'pago' ? 'Pago' : 'Pendente'}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-xs text-zinc-300">
-                    <div className="flex items-center gap-2 truncate">
-                      <Phone size={14} className="text-emerald-500 shrink-0" />
-                      <span className="font-mono">{item.phone || 'Sem telefone'}</span>
-                    </div>
-
-                    {item.email && (
+                    <div className="space-y-2 text-xs text-zinc-300">
                       <div className="flex items-center gap-2 truncate">
-                        <Mail size={14} className="text-zinc-500 shrink-0" />
-                        <span className="truncate text-zinc-400">{item.email}</span>
+                        <Phone size={14} className="text-emerald-500 shrink-0" />
+                        <span className="font-mono">{item.phone || 'Sem telefone'}</span>
                       </div>
-                    )}
+
+                      {item.email && (
+                        <div className="flex items-center gap-2 truncate">
+                          <Mail size={14} className="text-zinc-500 shrink-0" />
+                          <span className="truncate text-zinc-400">{item.email}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80 space-y-1">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-red-400 flex items-center gap-1">
+                        <ShieldAlert size={12} /> Contato de SOS
+                      </p>
+                      <p className="text-xs font-bold text-zinc-300 truncate">
+                        {item.emergencyName || 'Não informado'}
+                      </p>
+                      <p className="text-[11px] font-mono text-zinc-500">
+                        {item.emergencyPhone || '---'}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80 space-y-1">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-red-400 flex items-center gap-1">
-                      <ShieldAlert size={12} /> Contato de SOS
-                    </p>
-                    <p className="text-xs font-bold text-zinc-300 truncate">
-                      {item.emergencyName || 'Não informado'}
-                    </p>
-                    <p className="text-[11px] font-mono text-zinc-500">
-                      {item.emergencyPhone || '---'}
-                    </p>
-                  </div>
-                </div>
+                  <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-col gap-3 pl-2">
+                    <div className="flex justify-between items-center text-xs font-mono text-zinc-500">
+                      <span>Valor: R$ {limparR$(formatarMoeda(item.valor || 55))}</span>
+                      <span>#{(idx + 1).toString().padStart(3, '0')}</span>
+                    </div>
 
-                <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-col gap-3 pl-2">
-                  <div className="flex justify-between items-center text-xs font-mono text-zinc-500">
-                    <span>Valor: R$ {limparR$(formatarMoeda(item.valor || 55))}</span>
-                    <span>#{(idx + 1).toString().padStart(3, '0')}</span>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <button 
-                      onClick={() => setItemEditando({ ...item })} 
-                      className="bg-zinc-800 hover:bg-blue-600 text-zinc-400 hover:text-white p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-blue-500 flex items-center gap-1 text-[11px] font-bold"
-                      title="Editar Dados do Participante"
-                    >
-                      <Pencil size={15} />
-                    </button>
-
-                    {/* 🚀 BOTÃO USANDO A FUNÇÃO NOVA */}
-                    <button 
-                      onClick={() => chamarNoWhatsApp(item.phone, item.name, item.status === 'pago')} 
-                      className="bg-zinc-800 hover:bg-[#25D366] text-zinc-400 hover:text-zinc-950 p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-[#25D366] flex items-center gap-1 text-[11px] font-bold"
-                      title="Chamar no WhatsApp"
-                    >
-                      <MessageCircle size={15} />
-                    </button>
-
-                    {item.status !== 'pago' && (
+                    <div className="flex items-center justify-end gap-2 pt-1">
                       <button 
-                        onClick={() => aprovarInscricao(item.id, item.name)} 
-                        disabled={processandoId === item.id}
-                        className="bg-zinc-800 hover:bg-emerald-500 text-zinc-400 hover:text-zinc-950 p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-emerald-500 flex items-center gap-1 text-[11px] font-bold disabled:opacity-50"
-                        title="Aprovar Pagamento Manualmente"
+                        onClick={() => setItemEditando({ ...item })} 
+                        className="bg-zinc-800 hover:bg-blue-600 text-zinc-400 hover:text-white p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-blue-500 flex items-center gap-1 text-[11px] font-bold"
+                        title="Editar Dados do Participante"
                       >
-                        {processandoId === item.id ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
-                        <span className="text-[10px] uppercase font-black">Aprovar</span>
+                        <Pencil size={15} />
                       </button>
-                    )}
 
-                    <button 
-                      onClick={() => excluirInscricao(item.id, item.name)} 
-                      disabled={processandoId === item.id}
-                      className="bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-white p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-red-500 flex items-center gap-1 text-[11px] font-bold disabled:opacity-50"
-                      title="Excluir Registro"
-                    >
-                      {processandoId === item.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-                    </button>
+                      {/* 🚀 AQUI A GENTE PASSA A VARIÁVEL NOVA (nomeWhatsApp) EM VEZ DE item.name */}
+                      <button 
+                        onClick={() => chamarNoWhatsApp(item.phone, nomeWhatsApp, item.status === 'pago')} 
+                        className="bg-zinc-800 hover:bg-[#25D366] text-zinc-400 hover:text-zinc-950 p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-[#25D366] flex items-center gap-1 text-[11px] font-bold"
+                        title="Chamar no WhatsApp"
+                      >
+                        <MessageCircle size={15} />
+                      </button>
+
+                      {item.status !== 'pago' && (
+                        <button 
+                          onClick={() => aprovarInscricao(item.id, item.name)} 
+                          disabled={processandoId === item.id}
+                          className="bg-zinc-800 hover:bg-emerald-500 text-zinc-400 hover:text-zinc-950 p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-emerald-500 flex items-center gap-1 text-[11px] font-bold disabled:opacity-50"
+                          title="Aprovar Pagamento Manualmente"
+                        >
+                          {processandoId === item.id ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+                          <span className="text-[10px] uppercase font-black">Aprovar</span>
+                        </button>
+                      )}
+
+                      <button 
+                        onClick={() => excluirInscricao(item.id, item.name)} 
+                        disabled={processandoId === item.id}
+                        className="bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-white p-2.5 rounded-xl transition-all border border-zinc-700 hover:border-red-500 flex items-center gap-1 text-[11px] font-bold disabled:opacity-50"
+                        title="Excluir Registro"
+                      >
+                        {processandoId === item.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         )}
 
