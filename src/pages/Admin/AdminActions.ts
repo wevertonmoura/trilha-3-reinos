@@ -8,8 +8,22 @@ export const chamarNoWhatsApp = (telefone: string, nome: string, pago: boolean) 
   const nomeFormatado = nome || ''; 
   
   // ✅ MENSAGEM DO SANTUÁRIO DOS 3 REINOS
-  const txtPago = `Fala, ${nomeFormatado}! Aqui é da organização do Vem Para Trilha. Passando para agradecer pela sua inscrição! A sua compra para a Trilha do Santuário dos 3 Reinos foi CONFIRMADA com sucesso! ✅\n\nA nossa aventura já é no dia 23 de Agosto! ⛰️🔥\n\nQueria pedir um favor: manda aqui o seu @ do Instagram e uma foto sua bem massa para a gente preparar a arte de presença confirmada, beleza?\n\nAh, só para avisar: na semana da trilha vamos criar um grupo oficial no WhatsApp com todo mundo que vai participar para passar a localização exata, ponto de encontro e os últimos detalhes! Nos vemos lá! 🎒💦`;
-  
+ const txtPago = `Fala, ${nomeFormatado}!
+
+🚨 *ATENÇÃO, GALERA DO VEM PARA TRILHA!* 🚨
+
+A nossa aventura está chegando! É neste *domingo, dia 23/08*. ⛰️🔥
+
+📲 *PASSO OBRIGATÓRIO (GRUPO OFICIAL):*
+Entre agora no grupo oficial da trilha para receber o ponto de encontro e os horários finais:
+👉 https://chat.whatsapp.com/EInPVWqK0Rf5jeOvqWxHoa?s=cl&p=a&ilr=4
+
+_(Atenção: Se você comprou mais de um ingresso, mande esse link agora mesmo para o seu acompanhante entrar no grupo também!)_
+
+⚠️ *AVISO IMPORTANTE - ZERO PENETRAS:*
+Faremos uma chamada nominal e detalhada pela lista de pagantes antes de iniciar a trilha. Só fará o percurso quem estiver com o nome na lista. Por favor, *não levem pessoas sem ingresso (penetras)* para evitar constrangimentos e não passar vergonha na hora, beleza?
+
+Nos vemos no domingo! Bora simbora lavar a alma!`;
   const txtPendente = `Fala, ${nomeFormatado}! Aqui é da organização do Vem Para Trilha. Vi que você iniciou sua inscrição, mas o pagamento ainda não constou. Precisa de alguma ajuda com o PIX?`;
   
   window.open(`https://wa.me/${fone}?text=${encodeURIComponent(pago ? txtPago : txtPendente)}`, '_blank');
