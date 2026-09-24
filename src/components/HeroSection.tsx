@@ -105,7 +105,7 @@ export default function HeroSection({ vagasOcupadas, LIMITE_VAGAS, scrollToForm 
           {/* ATUALIZADO: DATA 23 DE AGOSTO */}
           <div className="flex items-center justify-center gap-2 bg-gradient-to-b from-zinc-800/60 to-zinc-900/60 text-zinc-200 text-xs font-bold py-2.5 px-4 rounded-xl border-t border-zinc-700/50 border-x border-zinc-800/50 border-b border-zinc-900 backdrop-blur-md shadow-lg uppercase tracking-wider">
             <Calendar size={14} className="text-emerald-400" />
-            <span>23 de Agosto, 2026</span>
+            <span>02 de Setembro, 2026</span>
           </div>
 
           <div className="flex items-center justify-center gap-2 bg-gradient-to-b from-emerald-900/30 to-zinc-900/60 text-emerald-400 text-xs font-black py-2.5 px-4 rounded-xl border-t border-emerald-500/40 border-x border-emerald-500/20 border-b border-zinc-900 backdrop-blur-md shadow-lg uppercase tracking-widest">

@@ -12,7 +12,7 @@ export const chamarNoWhatsApp = (telefone: string, nome: string, pago: boolean) 
 
 🚨 *ATENÇÃO, GALERA DO VEM PARA TRILHA!* 🚨
 
-A nossa aventura está chegando! É neste *domingo, dia 23/08*. ⛰️🔥
+A nossa aventura está chegando! É neste *domingo, dia 02/09*. ⛰️🔥
 
 📲 *PASSO OBRIGATÓRIO (GRUPO OFICIAL):*
 Entre agora no grupo oficial da trilha para receber o ponto de encontro e os horários finais:
