@@ -88,7 +88,7 @@ export default async function handler(req, res) {
                 
                 <div style="background-color: #f3f4f6; padding: 20px; border-radius: 10px; margin-top: 25px;">
                   <h3 style="margin-top: 0; color: #111827; font-size: 18px;">Resumo do Evento</h3>
-                  <p style="margin: 8px 0; font-size: 15px;">📅 <strong>Data:</strong> 02/09/2026 (Domingo)</p>
+                  <p style="margin: 8px 0; font-size: 15px;">📅 <strong>Data:</strong> 02/11/2026 (Domingo)</p>
                   <p style="margin: 8px 0; font-size: 15px;">⏰ <strong>Horário:</strong> 07:00 às 12:00</p>
                   <p style="margin: 8px 0; font-size: 15px;">📍 <strong>Local:</strong> Guabiraba, Recife - PE</p>
                 </div>
