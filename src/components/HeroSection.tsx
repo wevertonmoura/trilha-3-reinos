@@ -105,7 +105,7 @@ export default function HeroSection({ vagasOcupadas, LIMITE_VAGAS, scrollToForm 
           {/* ATUALIZADO: DATA 23 DE AGOSTO */}
           <div className="flex items-center justify-center gap-2 bg-gradient-to-b from-zinc-800/60 to-zinc-900/60 text-zinc-200 text-xs font-bold py-2.5 px-4 rounded-xl border-t border-zinc-700/50 border-x border-zinc-800/50 border-b border-zinc-900 backdrop-blur-md shadow-lg uppercase tracking-wider">
             <Calendar size={14} className="text-emerald-400" />
-            <span>02 de Novembro, 2026</span>
+            <span>01 de Novembro, 2026</span>
           </div>
 
           <div className="flex items-center justify-center gap-2 bg-gradient-to-b from-emerald-900/30 to-zinc-900/60 text-emerald-400 text-xs font-black py-2.5 px-4 rounded-xl border-t border-emerald-500/40 border-x border-emerald-500/20 border-b border-zinc-900 backdrop-blur-md shadow-lg uppercase tracking-widest">
@@ -115,7 +115,7 @@ export default function HeroSection({ vagasOcupadas, LIMITE_VAGAS, scrollToForm 
 
           <div className="flex items-center justify-center gap-2 bg-gradient-to-b from-amber-900/20 to-zinc-900/60 text-amber-400 text-xs font-bold py-2.5 px-4 rounded-xl border-t border-amber-500/40 border-x border-amber-500/20 border-b border-zinc-900 backdrop-blur-md shadow-lg uppercase tracking-wider">
             <Clock size={14} className="text-amber-400" />
-            <span>07:00h às 12:00h</span>
+            <span>06:30h às 12:00h</span>
           </div>
         </motion.div>
 
