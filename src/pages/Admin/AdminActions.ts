@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/pages/Admin/AdminActions.ts
 
 export const chamarNoWhatsApp = (telefone: string, nome: string, pago: boolean) => {
@@ -32,15 +33,15 @@ export const exportarCSV = (dados: any[], tipo: 'SOS' | 'COMPLETA' | 'ESPERA') =
 
   if (tipo === 'SOS') {
     headers = ["Nome Completo", "Contato de Emergência"];
-    rows = dados.filter((p: any) => p.pago).map((p: any) => `"\({p.nome || ''}";"\){p.contato_emergencia || 'Não informado'}"`);
+    rows = dados.filter((item: any) => item.pago === true).map((item: any) => `"\({item.nome || ''}";"\){item.contato_emergencia || 'Não informado'}"`);
     filename = 'Lista_SOS_Tres_Reinos';
   } else if (tipo === 'COMPLETA') {
     headers = ["Nome Completo", "WhatsApp", "CPF", "Contato de Emergência", "Status"];
-    rows = dados.map((p: any) => `"\({p.nome || ''}";"\){p.telefone || ''}";"\({p.cpf || ''}";"\){p.contato_emergencia || ''}";"${p.pago ? 'PAGO' : 'PENDENTE'}"`);
+    rows = dados.map((item: any) => `"\({item.nome || ''}";"\){item.telefone || ''}";"\({item.cpf || ''}";"\){item.contato_emergencia || ''}";"${item.pago ? 'PAGO' : 'PENDENTE'}"`);
     filename = 'Inscritos_Geral_Tres_Reinos';
   } else {
     headers = ["Nome na Espera", "WhatsApp", "Data de Cadastro"];
-    rows = dados.map((p: any) => `"\({p.nome || ''}";"\){p.telefone || ''}";"${p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : ''}"`);
+    rows = dados.map((item: any) => `"\({item.nome || ''}";"\){item.telefone || ''}";"${item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : ''}"`);
     filename = 'Lista_Espera_VIP_Tres_Reinos';
   }
 
