@@ -66,7 +66,7 @@ export const exportarCSV = (dados: any[], tipo: 'SOS' | 'COMPLETA' | 'ESPERA') =
     rows = dados.map(p => `"\({p.nome || ''}";"\){p.telefone || ''}";"${p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : ''}"`);
     filename = 'Lista_Espera_VIP_Tres_Reinos';
   }
-
+  
   const content = [headers.join(';'), ...rows].join('\n');
   const blob = new Blob(["\uFEFF" + content], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement("a");
@@ -74,5 +74,5 @@ export const exportarCSV = (dados: any[], tipo: 'SOS' | 'COMPLETA' | 'ESPERA') =
   link.setAttribute("download", `\({filename}_\){new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`);
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
+  document.body.removeChild(link) ;
 };
