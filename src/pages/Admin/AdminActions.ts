@@ -86,4 +86,6 @@ export const exportarCSV = (dados: any[], tipo: 'SOS' | 'COMPLETA' | 'ESPERA') =
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+
+  
 };
