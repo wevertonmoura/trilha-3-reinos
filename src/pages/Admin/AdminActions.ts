@@ -1,42 +1,58 @@
+// @ts-nocheck
 // src/pages/Admin/AdminActions.ts
 
 export const chamarNoWhatsApp = (telefone: string, nome: string, pago: boolean) => {
+  // Pega apenas os números
   let fone = (telefone || '').replace(/\D/g, ''); 
-  if (fone.length === 10 || fone.length === 11) fone = '55' + fone;
   
-  // 🚀 Tirei o .split(' ')[0] para a tabela conseguir mandar "João e Maria" juntos!
+  // Remove o zero inicial se houver
+  if (fone.startsWith('0')) fone = fone.substring(1);
+
+  // Adiciona DDD e código do país conforme o tamanho
+  if (fone.length === 8 || fone.length === 9) {
+    fone = '5581' + fone;
+  } else if (fone.length === 10 || fone.length === 11) {
+    fone = '55' + fone;
+  }
+
+  if (!fone || fone.length < 12) {
+    alert(`O telefone salvo para ${nome || 'este participante'} (${telefone}) está inválido ou incompleto.`);
+    return;
+  }
+
   const nomeFormatado = nome || ''; 
-  // 👉 MENSAGEM ATUAL QUE SERÁ ENVIADA
-  const txtPago = `Fala, ${nomeFormatado}!
-
-✅ *Sua inscrição foi confirmada com sucesso!*
-
-Para a gente preparar a arte de presença confirmada, por favor:
-1️⃣ Me mande o seu @ do Instagram (e o do seu acompanhante, se tiver).
-2️⃣ Envie uma foto bem massa sua (ou de vocês).
-
-🗓️ *Aviso:* Na semana da trilha (dia 01), vamos criar um grupo oficial no WhatsApp onde vamos passar todas as informações e tirar todas as dúvidas.
-
-Bora simbora! ⛰️️🔥`;
   
-/*   // ✅ MENSAGEM DO SANTUÁRIO DOS 3 REINOS
- const txtPago = `Fala, ${nomeFormatado}!
+  // 👉 MENSAGEM PARA QUEM PAGOU (CANCELAMENTO E ESTORNO)
+  const txtPago = `Fala, ${nomeFormatado}! Tudo bem?
 
-  🚨 *ATENÇÃO, GALERA DO VEM PARA TRILHA!* 🚨
+Primeiramente, queria agradecer muito por ter garantido sua vaga e pela confiança no nosso grupo.
 
-A nossa aventura está chegando! É neste *domingo, dia 01/11*. ⛰️🔥
+Infelizmente, estou entrando em contato para dar uma notícia chata: *a nossa trilha do Santuário dos 3 Reinos precisou ser cancelada.* 
 
-📲 *PASSO OBRIGATÓRIO (GRUPO OFICIAL):*
-Entre agora no grupo oficial da trilha para receber o ponto de encontro e os horários finais:
-👉 https://chat.whatsapp.com/EInPVWqK0Rf5jeOvqWxHoa?s=cl&p=a&ilr=4
+🚨 *O que aconteceu?*
+Como alguns de vocês devem ter visto nas redes sociais, alguns vídeos do Santuário viralizaram recentemente. Devido a isso, um volume muito grande de pessoas começou a frequentar o local de forma desordenada e fazendo bagunça. Por conta dessa situação, o acesso ao local e as trilhas foram *suspensos temporariamente por tempo indeterminado*.
 
-_(Atenção: Se você comprou mais de um ingresso, mande esse link agora mesmo para o seu acompanhante entrar no grupo também!)_
+💸 *Sobre o Reembolso:*
+Como não há previsão de liberação do espaço e zelamos pela organização, vamos realizar o estorno integral do valor que você pagou. 
 
-⚠️ *AVISO IMPORTANTE - ZERO PENETRAS:*
-Faremos uma chamada nominal e detalhada pela lista de pagantes antes de iniciar a trilha. Só fará o percurso quem estiver com o nome na lista. Por favor, *não levem pessoas sem ingresso (penetras)* para evitar constrangimentos e não passar vergonha na hora, beleza?
+Para eu fazer a transferência, *por favor, me envie respondendo a esta mensagem:*
+1️⃣ Sua Chave PIX.
+2️⃣ Nome de quem vai receber (titular da conta).
 
-Nos vemos no domingo! Bora simbora lavar a alma!`;   */
-  const txtPendente = `Fala, ${nomeFormatado}! Aqui é da organização do Vem Para Trilha. Vi que você iniciou sua inscrição, mas o pagamento ainda não constou. Precisa de alguma ajuda com o PIX?`;
+Qualquer dúvida que tiver, é só perguntar por aqui. Pedimos desculpas por esse imprevisto que, infelizmente, fugiu do nosso controle, mas logo estaremos juntos em uma nova aventura!
+
+Fico no aguardo do seu PIX. ⛰️🤝`;
+
+  // 👉 MENSAGEM PARA QUEM NÃO PAGOU (APENAS AVISO DE CANCELAMENTO)
+  const txtPendente = `Fala, ${nomeFormatado}! Tudo bem? 
+        
+Passando para avisar que, infelizmente, *a nossa trilha do Santuário dos 3 Reinos precisou ser cancelada* por tempo indeterminado. 
+
+Alguns vídeos do local viralizaram, o que gerou muita bagunça e superlotação. Por segurança e respeito ao meio ambiente, o acesso foi suspenso.
+
+Como vimos que você iniciou a inscrição mas ainda não tinha feito o pagamento, estamos apenas avisando para que você não faça o PIX, beleza? 
+
+Agradecemos o interesse e esperamos você em uma próxima aventura! ⛰️🤝`;
   
   window.open(`https://wa.me/${fone}?text=${encodeURIComponent(pago ? txtPago : txtPendente)}`, '_blank');
 };
@@ -48,7 +64,6 @@ export const exportarCSV = (dados: any[], tipo: 'SOS' | 'COMPLETA' | 'ESPERA') =
   let rows: string[] = [];
   let filename = '';
 
-  // 🚀 Arrumei os nomes dos arquivos para Tres_Reinos
   if (tipo === 'SOS') {
     headers = ["Nome Completo", "Contato de Emergência"];
     rows = dados.filter(p => p.pago).map(p => `"${p.nome || ''}";"${p.contato_emergencia || 'Não informado'}"`);

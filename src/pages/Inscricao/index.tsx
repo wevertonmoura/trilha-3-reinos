@@ -168,7 +168,8 @@ const Inscricao: React.FC<InscricaoProps> = ({
   }
 
   // ESTADO 2: VAGAS ESGOTADAS -> LISTA DE ESPERA VIP
-  if (vagasOcupadas >= LIMITE_VAGAS) {
+  // 🚀 MUDANÇA AQUI: Alterado para 'true' para forçar o site a ficar em modo ESGOTADO.
+  if (true) {
     return (
       <div className="animate-in fade-in zoom-in duration-500">
         <div className="text-center mb-8">
@@ -213,6 +214,7 @@ const Inscricao: React.FC<InscricaoProps> = ({
   }
 
   // ESTADO 3: FORMULÁRIO NORMAL DE COMPRA (100% focado no PIX)
+  // (Este formulário está escondido agora porque forçamos o Estado 2 acima)
   return (
     <>
       <div className="text-center mb-10 relative">
@@ -222,7 +224,6 @@ const Inscricao: React.FC<InscricaoProps> = ({
         {/* Selo limpo apenas com PIX */}
         <div className="flex items-center justify-center gap-2 mt-3 text-emerald-400 text-[11px] font-bold uppercase tracking-wider">
           <QrCode size={16} />
-          
         </div>
       </div>
 
